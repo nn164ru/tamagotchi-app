@@ -122,6 +122,8 @@ function init() {
     
     // Проверка ежедневного бонуса
     checkDailyBonus();
+
+    renderShop(); // ← Добавить
     
     // Обновление рейтинга
     updateRating();
@@ -504,6 +506,34 @@ function changePetSkin() {
         state.inventory.skins.push(state.pet.emoji);
     }
     showNotification('🎨 Скин изменен!');
+}
+
+// ============================================
+// ГЕНЕРАЦИЯ МАГАЗИНА (АВТОМАТИЧЕСКИ)
+// ============================================
+function renderShop() {
+    const shopContainer = document.querySelector('.shop-items');
+    if (!shopContainer) return;
+    
+    // ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ
+    const shopItems = [
+        { type: 'food', emoji: '🍕', name: 'Еда', coins: 10, diamonds: 0 },
+        { type: 'toy', emoji: '🧸', name: 'Игрушка', coins: 15, diamonds: 0 },
+        { type: 'medicine', emoji: '💊', name: 'Лекарство', coins: 20, diamonds: 0 },
+        { type: 'skin', emoji: '🎨', name: 'Скин', coins: 0, diamonds: 5 }
+    ];
+    
+    shopContainer.innerHTML = shopItems.map(item => {
+        const priceText = item.coins > 0 ? `🪙 ${item.coins}` : `💎 ${item.diamonds}`;
+        return `
+            <div class="item" onclick="buyItem('${item.type}')">
+                <span>${item.emoji} ${item.name}</span>
+                <span>${priceText}</span>
+            </div>
+        `;
+    }).join('');
+    
+    console.log('✅ Магазин сгенерирован с ценами:', shopItems);
 }
 
 // ============================================
