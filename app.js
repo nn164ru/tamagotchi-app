@@ -490,7 +490,7 @@ function changePetSkin() {
 function generateReferralLink() {
     const userId = state.user.id;
     const botUsername = 'YourBotUsername';
-    const link = `https://t.me/${botUsername}?start=ref_${userId}`;
+    const link = `https://t.me/${nnvtamagochi_bot}?start=ref_${userId}`;
     if (elements.refLink) {
         elements.refLink.textContent = link;
     }
