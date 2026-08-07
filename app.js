@@ -208,18 +208,18 @@ function validateGameData(data) {
 }
 
 // ============================================
-// ОБНОВЛЕНИЕ UI
+// ОБНОВЛЕНИЕ UI (ПОЛНОСТЬЮ ИСПРАВЛЕННОЕ)
 // ============================================
 function updateUI() {
     const pet = state.pet;
     const user = state.user;
     
-    // Обновление питомца
+    // 1. ОБНОВЛЕНИЕ ПИТОМЦА
     if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
     if (elements.petName) elements.petName.textContent = pet.name;
     if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
     
-    // Обновление баров
+    // 2. ОБНОВЛЕНИЕ БАРОВ
     if (elements.healthBar) {
         const val = Math.round(Math.max(0, Math.min(100, pet.health)));
         elements.healthBar.style.width = val + '%';
@@ -241,27 +241,48 @@ function updateUI() {
         elements.hungerBar.textContent = val + '%';
     }
     
-    // Обновление информации пользователя
+    // 3. ОБНОВЛЕНИЕ ИНФОРМАЦИИ ПОЛЬЗОВАТЕЛЯ
     if (elements.userName) elements.userName.textContent = user.name;
     if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
+    
+    // 4. ⭐ ГЛАВНОЕ: ОБНОВЛЕНИЕ МОНЕТ И АЛМАЗОВ ⭐
+    // Приводим к целым числам и форматируем
+    const coinsDisplay = Math.floor(user.coins);
+    const diamondsDisplay = Math.floor(user.diamonds);
+    
     if (elements.coins) {
-        elements.coins.textContent = `🪙 ${formatNumber(Math.floor(user.coins))}`;
+        elements.coins.textContent = `🪙 ${formatNumber(coinsDisplay)}`;
+        console.log('🪙 Монеты обновлены:', coinsDisplay); // Для отладки
     }
     if (elements.diamonds) {
-        elements.diamonds.textContent = `💎 ${formatNumber(Math.floor(user.diamonds))}`;
+        elements.diamonds.textContent = `💎 ${formatNumber(diamondsDisplay)}`;
+        console.log('💎 Алмазы обновлены:', diamondsDisplay); // Для отладки
     }
     
+    // 5. ОБНОВЛЕНИЕ ЦВЕТОВ
     updateBarColors();
 }
 
 // ============================================
-// ФОРМАТИРОВАНИЕ ЧИСЕЛ
+// ФОРМАТИРОВАНИЕ ЧИСЕЛ (ИСПРАВЛЕННОЕ)
 // ============================================
 function formatNumber(num) {
-    if (num === undefined || num === null) return '0';
+    // Проверка на undefined/null
+    if (num === undefined || num === null || isNaN(num)) {
+        return '0';
+    }
+    
+    // Приводим к целому числу
     num = Math.floor(num);
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    
+    // Форматирование больших чисел
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    
     return num.toString();
 }
 
