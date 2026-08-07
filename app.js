@@ -425,46 +425,65 @@ function levelUp() {
 }
 
 // ============================================
-// МАГАЗИН
+// МАГАЗИН (ИСПРАВЛЕННЫЙ)
 // ============================================
 function buyItem(type) {
+    // ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ ЦЕН
     const prices = {
         food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
-        toy: { coins: 20, diamonds: 0, name: 'Игрушка', emoji: '🧸' },
-        medicine: { coins: 30, diamonds: 0, name: 'Лекарство', emoji: '💊' },
+        toy: { coins: 15, diamonds: 0, name: 'Игрушка', emoji: '🧸' },
+        medicine: { coins: 20, diamonds: 0, name: 'Лекарство', emoji: '💊' },
         skin: { coins: 0, diamonds: 5, name: 'Скин', emoji: '🎨' }
     };
     
+    // Проверка существования товара
     const price = prices[type];
     if (!price) {
         showNotification('❌ Неизвестный товар');
         return;
     }
     
+    // Получаем текущие средства (с округлением)
     const currentCoins = Math.floor(state.user.coins);
     const currentDiamonds = Math.floor(state.user.diamonds);
     
+    // ПРОВЕРКА МОНЕТ
     if (price.coins > 0 && currentCoins < price.coins) {
         showNotification(`❌ Недостаточно монет! Нужно ${price.coins}, у вас ${currentCoins}`);
         return;
     }
+    
+    // ПРОВЕРКА АЛМАЗОВ
     if (price.diamonds > 0 && currentDiamonds < price.diamonds) {
         showNotification(`❌ Недостаточно алмазов! Нужно ${price.diamonds}, у вас ${currentDiamonds}`);
         return;
     }
     
+    // СПИСАНИЕ СРЕДСТВ (с защитой от отрицательных значений)
     state.user.coins = Math.max(0, currentCoins - price.coins);
     state.user.diamonds = Math.max(0, currentDiamonds - price.diamonds);
     
+    // ВЫДАЧА ТОВАРА
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
+    // ОБНОВЛЕНИЕ UI И СОХРАНЕНИЕ
     updateUI();
     saveGame();
-    showNotification(`✅ Куплено: ${price.emoji} ${price.name}!`);
+    
+    // Показываем детальное уведомление
+    showNotification(`✅ Куплено: ${price.emoji} ${price.name}!
+🪙 Было: ${currentCoins} → Стало: ${state.user.coins}
+💎 Было: ${currentDiamonds} → Стало: ${state.user.diamonds}`);
+    
+    console.log(`🛒 Покупка: ${type}`, {
+        цена: price.coins,
+        было: currentCoins,
+        стало: state.user.coins
+    });
 }
 
 function changePetSkin() {
