@@ -446,10 +446,10 @@ function levelUp() {
 }
 
 // ============================================
-// МАГАЗИН (ИСПРАВЛЕННЫЙ)
+// МАГАЗИН (ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ)
 // ============================================
 function buyItem(type) {
-    // ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ ЦЕН
+    // ЦЕНЫ ТОВАРОВ
     const prices = {
         food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
         toy: { coins: 15, diamonds: 0, name: 'Игрушка', emoji: '🧸' },
@@ -457,14 +457,13 @@ function buyItem(type) {
         skin: { coins: 0, diamonds: 5, name: 'Скин', emoji: '🎨' }
     };
     
-    // Проверка существования товара
     const price = prices[type];
     if (!price) {
         showNotification('❌ Неизвестный товар');
         return;
     }
     
-    // Получаем текущие средства (с округлением)
+    // ТЕКУЩИЕ СРЕДСТВА
     const currentCoins = Math.floor(state.user.coins);
     const currentDiamonds = Math.floor(state.user.diamonds);
     
@@ -480,30 +479,33 @@ function buyItem(type) {
         return;
     }
     
-    // СПИСАНИЕ СРЕДСТВ (с защитой от отрицательных значений)
+    // 💰 СПИСАНИЕ СРЕДСТВ
     state.user.coins = Math.max(0, currentCoins - price.coins);
     state.user.diamonds = Math.max(0, currentDiamonds - price.diamonds);
     
-    // ВЫДАЧА ТОВАРА
+    // 🎁 ВЫДАЧА ТОВАРА
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
-    // ОБНОВЛЕНИЕ UI И СОХРАНЕНИЕ
+    // ⭐ ВАЖНО: ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI ⭐
     updateUI();
+    updateCurrencyDisplay(); // ДОПОЛНИТЕЛЬНОЕ ОБНОВЛЕНИЕ
     saveGame();
     
-    // Показываем детальное уведомление
-    showNotification(`✅ Куплено: ${price.emoji} ${price.name}!
-🪙 Было: ${currentCoins} → Стало: ${state.user.coins}
-💎 Было: ${currentDiamonds} → Стало: ${state.user.diamonds}`);
+    // 📢 УВЕДОМЛЕНИЕ С ДЕТАЛЯМИ
+    const message = `✅ Куплено: ${price.emoji} ${price.name}!
+🪙 ${currentCoins} → ${state.user.coins} монет
+💎 ${currentDiamonds} → ${state.user.diamonds} алмазов`;
+    showNotification(message);
     
-    console.log(`🛒 Покупка: ${type}`, {
+    console.log('🛒 Покупка завершена:', {
+        товар: type,
         цена: price.coins,
-        было: currentCoins,
-        стало: state.user.coins
+        монет_было: currentCoins,
+        монет_стало: state.user.coins
     });
 }
 
