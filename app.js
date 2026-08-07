@@ -420,9 +420,10 @@ function levelUp() {
 }
 
 // ============================================
-// МАГАЗИН
+// МАГАЗИН (ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ)
 // ============================================
 function buyItem(type) {
+    // ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ ЦЕН
     const prices = {
         food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
         toy: { coins: 20, diamonds: 0, name: 'Игрушка', emoji: '🧸' },
@@ -436,30 +437,39 @@ function buyItem(type) {
         return;
     }
     
+    // Проверка средств (с округлением)
     const currentCoins = Math.floor(state.user.coins);
     const currentDiamonds = Math.floor(state.user.diamonds);
     
+    // Проверка монет
     if (price.coins > 0 && currentCoins < price.coins) {
         showNotification(`❌ Недостаточно монет! Нужно ${price.coins}, у вас ${currentCoins}`);
         return;
     }
+    
+    // Проверка алмазов
     if (price.diamonds > 0 && currentDiamonds < price.diamonds) {
         showNotification(`❌ Недостаточно алмазов! Нужно ${price.diamonds}, у вас ${currentDiamonds}`);
         return;
     }
     
+    // Списание средств (с защитой от отрицательных значений)
     state.user.coins = Math.max(0, currentCoins - price.coins);
     state.user.diamonds = Math.max(0, currentDiamonds - price.diamonds);
     
+    // Выдача товара
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
+    // Обновление и сохранение
     updateUI();
     saveGame();
-    showNotification(`✅ Куплено: ${price.emoji} ${price.name}!`);
+    
+    // Показываем остаток
+    showNotification(`✅ Куплено: ${price.emoji} ${price.name}! Осталось: 🪙${state.user.coins}`);
 }
 
 function changePetSkin() {
