@@ -44,6 +44,8 @@ const state = {
         diamonds: 10,
         rating: 0,
         referrals: 0,
+        referralEarned: 0,
+        referralList: [],
         totalPlayTime: 0,
         lastLogin: Date.now(),
         loginStreak: 1
@@ -115,7 +117,7 @@ function init() {
     // Настройка темы Telegram
     setupTelegramTheme();
     
-    // Запуск игрового цикла
+    // ЗАПУСК ИГРОВОГО ЦИКЛА (ВАЖНО!)
     startGameLoop();
     
     // Проверка ежедневного бонуса
@@ -125,9 +127,12 @@ function init() {
     updateRating();
     
     console.log('✅ Игра успешно запущена!');
-    if (security) {
-        console.log('🛡️ Защита активна');
-    }
+    console.log('📊 Текущие параметры:', {
+        health: state.pet.health,
+        energy: state.pet.energy,
+        mood: state.pet.mood,
+        hunger: state.pet.hunger
+    });
 }
 
 // ============================================
@@ -420,10 +425,9 @@ function levelUp() {
 }
 
 // ============================================
-// МАГАЗИН (ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ)
+// МАГАЗИН
 // ============================================
 function buyItem(type) {
-    // ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ ЦЕН
     const prices = {
         food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
         toy: { coins: 20, diamonds: 0, name: 'Игрушка', emoji: '🧸' },
@@ -437,39 +441,30 @@ function buyItem(type) {
         return;
     }
     
-    // Проверка средств (с округлением)
     const currentCoins = Math.floor(state.user.coins);
     const currentDiamonds = Math.floor(state.user.diamonds);
     
-    // Проверка монет
     if (price.coins > 0 && currentCoins < price.coins) {
         showNotification(`❌ Недостаточно монет! Нужно ${price.coins}, у вас ${currentCoins}`);
         return;
     }
-    
-    // Проверка алмазов
     if (price.diamonds > 0 && currentDiamonds < price.diamonds) {
         showNotification(`❌ Недостаточно алмазов! Нужно ${price.diamonds}, у вас ${currentDiamonds}`);
         return;
     }
     
-    // Списание средств (с защитой от отрицательных значений)
     state.user.coins = Math.max(0, currentCoins - price.coins);
     state.user.diamonds = Math.max(0, currentDiamonds - price.diamonds);
     
-    // Выдача товара
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
-    // Обновление и сохранение
     updateUI();
     saveGame();
-    
-    // Показываем остаток
-    showNotification(`✅ Куплено: ${price.emoji} ${price.name}! Осталось: 🪙${state.user.coins}`);
+    showNotification(`✅ Куплено: ${price.emoji} ${price.name}!`);
 }
 
 function changePetSkin() {
@@ -490,7 +485,7 @@ function changePetSkin() {
 function generateReferralLink() {
     const userId = state.user.id;
     const botUsername = 'YourBotUsername';
-    const link = `https://t.me/${nnvtamagochi_bot}?start=ref_${userId}`;
+    const link = `https://t.me/${botUsername}?start=ref_${userId}`;
     if (elements.refLink) {
         elements.refLink.textContent = link;
     }
@@ -511,8 +506,18 @@ function shareReferral() {
     }
 }
 
+function applyReferral(refId) {
+    if (refId && refId !== state.user.id) {
+        state.user.referrals = (state.user.referrals || 0) + 1;
+        state.user.coins = Math.floor(state.user.coins) + 50;
+        showNotification('🎉 Реферал добавлен! Получено 50 монет!');
+        saveGame();
+        updateUI();
+    }
+}
+
 // ============================================
-// ИГРОВОЙ ЦИКЛ (ХАРАКТЕРИСТИКИ УМЕНЬШАЮТСЯ)
+// ИГРОВОЙ ЦИКЛ (ОБНОВЛЯЕТ ПАРАМЕТРЫ)
 // ============================================
 function startGameLoop() {
     console.log('🔄 Игровой цикл запущен (обновление каждые 5 секунд)');
@@ -523,9 +528,12 @@ function startGameLoop() {
     }, 1000);
     
     // Затем каждые 5 секунд
-    setInterval(() => {
+    const intervalId = setInterval(() => {
         updateGameStats();
     }, 5000);
+    
+    // Сохраняем ID интервала для возможности остановки
+    window.gameLoopInterval = intervalId;
 }
 
 function updateGameStats() {
@@ -535,8 +543,17 @@ function updateGameStats() {
     state.pet.mood = Math.max(0, state.pet.mood - 1);
     state.pet.health = Math.max(0, state.pet.health - 0.5);
     
+    // Логируем изменения (для отладки)
+    console.log('📉 Характеристики уменьшены:', {
+        hunger: Math.round(state.pet.hunger),
+        energy: Math.round(state.pet.energy),
+        mood: Math.round(state.pet.mood),
+        health: Math.round(state.pet.health)
+    });
+    
     // Проверка на смерть
     if (state.pet.health <= 0) {
+        console.warn('💀 Питомец умер!');
         showNotification('💀 Питомец умер! Восстановление...');
         state.pet.health = 50;
         state.pet.energy = 50;
@@ -549,6 +566,7 @@ function updateGameStats() {
     if (Math.random() < 0.05) {
         const bonus = Math.floor(Math.random() * 3) + 1;
         state.user.coins = Math.floor(state.user.coins) + bonus;
+        console.log(`💰 Пассивный доход: +${bonus} монет`);
     }
     
     state.user.totalPlayTime += 5;
@@ -692,7 +710,6 @@ function setupButtons() {
                     buyItem(match[1]);
                 }
             } else {
-                // Если нет onclick, пробуем через data-атрибут
                 const itemType = this.dataset.item;
                 if (itemType) {
                     buyItem(itemType);
@@ -746,7 +763,6 @@ function showNotification(message) {
             buttons: [{ type: 'ok' }]
         });
     } else {
-        // Создаем уведомление в DOM
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed;
@@ -799,6 +815,31 @@ function setupTelegramTheme() {
 }
 
 // ============================================
+// КОНСОЛЬНЫЕ КОМАНДЫ ДЛЯ ОТЛАДКИ
+// ============================================
+function debugStats() {
+    console.log('📊 Текущие параметры:', {
+        health: state.pet.health,
+        energy: state.pet.energy,
+        mood: state.pet.mood,
+        hunger: state.pet.hunger,
+        level: state.pet.level,
+        coins: state.user.coins
+    });
+}
+
+function testDecrease() {
+    console.log('🧪 Принудительное уменьшение параметров...');
+    state.pet.hunger = Math.max(0, state.pet.hunger - 10);
+    state.pet.energy = Math.max(0, state.pet.energy - 10);
+    state.pet.mood = Math.max(0, state.pet.mood - 10);
+    state.pet.health = Math.max(0, state.pet.health - 10);
+    updateUI();
+    saveGame();
+    debugStats();
+}
+
+// ============================================
 // ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
@@ -807,11 +848,18 @@ window.healPet = healPet;
 window.sleepPet = sleepPet;
 window.buyItem = buyItem;
 window.shareReferral = shareReferral;
+window.applyReferral = applyReferral;
 window.showNotification = showNotification;
 window.state = state;
 window.security = security;
 window.updateUI = updateUI;
 window.saveGame = saveGame;
+window.debugStats = debugStats;
+window.testDecrease = testDecrease;
+window.restartGame = function() {
+    saveGame();
+    location.reload();
+};
 
 // ============================================
 // ЗАПУСК
