@@ -214,54 +214,39 @@ function updateUI() {
     const pet = state.pet;
     const user = state.user;
     
-    // 1. ОБНОВЛЕНИЕ ПИТОМЦА
+    // 1. ПИТОМЕЦ
     if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
     if (elements.petName) elements.petName.textContent = pet.name;
     if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
     
-    // 2. ОБНОВЛЕНИЕ БАРОВ
-    if (elements.healthBar) {
-        const val = Math.round(Math.max(0, Math.min(100, pet.health)));
-        elements.healthBar.style.width = val + '%';
-        elements.healthBar.textContent = val + '%';
-    }
-    if (elements.energyBar) {
-        const val = Math.round(Math.max(0, Math.min(100, pet.energy)));
-        elements.energyBar.style.width = val + '%';
-        elements.energyBar.textContent = val + '%';
-    }
-    if (elements.moodBar) {
-        const val = Math.round(Math.max(0, Math.min(100, pet.mood)));
-        elements.moodBar.style.width = val + '%';
-        elements.moodBar.textContent = val + '%';
-    }
-    if (elements.hungerBar) {
-        const val = Math.round(Math.max(0, Math.min(100, pet.hunger)));
-        elements.hungerBar.style.width = val + '%';
-        elements.hungerBar.textContent = val + '%';
-    }
+    // 2. БАРЫ
+    const bars = [
+        { id: 'healthBar', value: pet.health },
+        { id: 'energyBar', value: pet.energy },
+        { id: 'moodBar', value: pet.mood },
+        { id: 'hungerBar', value: pet.hunger }
+    ];
     
-    // 3. ОБНОВЛЕНИЕ ИНФОРМАЦИИ ПОЛЬЗОВАТЕЛЯ
+    bars.forEach(bar => {
+        const element = document.getElementById(bar.id);
+        if (element) {
+            const val = Math.round(Math.max(0, Math.min(100, bar.value)));
+            element.style.width = val + '%';
+            element.textContent = val + '%';
+        }
+    });
+    
+    // 3. ИНФОРМАЦИЯ
     if (elements.userName) elements.userName.textContent = user.name;
     if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
     
-    // 4. ⭐ ГЛАВНОЕ: ОБНОВЛЕНИЕ МОНЕТ И АЛМАЗОВ ⭐
-    // Приводим к целым числам и форматируем
-    const coinsDisplay = Math.floor(user.coins);
-    const diamondsDisplay = Math.floor(user.diamonds);
+    // 4. ⭐ ВАЛЮТА (ОСНОВНОЕ ОБНОВЛЕНИЕ) ⭐
+    updateCurrencyDisplay();
     
-    if (elements.coins) {
-        elements.coins.textContent = `🪙 ${formatNumber(coinsDisplay)}`;
-        console.log('🪙 Монеты обновлены:', coinsDisplay); // Для отладки
-    }
-    if (elements.diamonds) {
-        elements.diamonds.textContent = `💎 ${formatNumber(diamondsDisplay)}`;
-        console.log('💎 Алмазы обновлены:', diamondsDisplay); // Для отладки
-    }
-    
-    // 5. ОБНОВЛЕНИЕ ЦВЕТОВ
+    // 5. ЦВЕТА
     updateBarColors();
 }
+
 
 // ============================================
 // ФОРМАТИРОВАНИЕ ЧИСЕЛ (ИСПРАВЛЕННОЕ)
@@ -520,6 +505,40 @@ function changePetSkin() {
     }
     showNotification('🎨 Скин изменен!');
 }
+
+// ============================================
+// ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ВАЛЮТЫ
+// ============================================
+function updateCurrencyDisplay() {
+    // Получаем элементы
+    const coinsEl = document.getElementById('coins');
+    const diamondsEl = document.getElementById('diamonds');
+    
+    // Проверяем что элементы существуют
+    if (!coinsEl) {
+        console.warn('⚠️ Элемент #coins не найден');
+        return;
+    }
+    if (!diamondsEl) {
+        console.warn('⚠️ Элемент #diamonds не найден');
+        return;
+    }
+    
+    // Обновляем с форматированием
+    const coinsValue = Math.floor(state.user.coins || 0);
+    const diamondsValue = Math.floor(state.user.diamonds || 0);
+    
+    coinsEl.textContent = `🪙 ${formatNumber(coinsValue)}`;
+    diamondsEl.textContent = `💎 ${formatNumber(diamondsValue)}`;
+    
+    console.log('💱 Валюта обновлена:', {
+        coins: coinsValue,
+        diamonds: diamondsValue
+    });
+}
+
+// Добавляем в глобальный доступ
+window.updateCurrencyDisplay = updateCurrencyDisplay;
 
 // ============================================
 // РЕФЕРАЛЬНАЯ СИСТЕМА
