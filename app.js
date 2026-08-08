@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
+// APP.JS - ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
 // ============================================
@@ -15,7 +15,7 @@ const security = window.security;
 const SecureSave = security?.saveProtection;
 
 // ============================================
-// 3. СОСТОЯНИЕ ИГРЫ (ОПТИМИЗИРОВАННОЕ)
+// 3. СОСТОЯНИЕ ИГРЫ
 // ============================================
 const state = {
     pet: {
@@ -54,7 +54,7 @@ const state = {
 };
 
 // ============================================
-// 4. ЦЕНЫ МАГАЗИНА (ЕДИНСТВЕННЫЙ ИСТОЧНИК)
+// 4. ЦЕНЫ МАГАЗИНА
 // ============================================
 const SHOP_PRICES = {
     food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
@@ -64,9 +64,11 @@ const SHOP_PRICES = {
 };
 
 // ============================================
-// 5. DOM ЭЛЕМЕНТЫ (С ПРОВЕРКОЙ)
+// 5. DOM ЭЛЕМЕНТЫ
 // ============================================
 const $ = (id) => document.getElementById(id);
+
+// Получаем элементы
 const elements = {
     petEmoji: $('petEmoji'),
     petName: $('petName'),
@@ -83,8 +85,61 @@ const elements = {
     ratingList: $('ratingList')
 };
 
+// Проверяем наличие элементов валюты
+console.log('🔍 Элементы валюты:', {
+    coins: elements.coins ? '✅ Найден' : '❌ НЕ НАЙДЕН',
+    diamonds: elements.diamonds ? '✅ Найден' : '❌ НЕ НАЙДЕН'
+});
+
+// Если элементы не найдены - создаем их
+if (!elements.coins || !elements.diamonds) {
+    console.warn('⚠️ Создаем элементы валюты...');
+    createCurrencyElements();
+}
+
 // ============================================
-// 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 6. СОЗДАНИЕ ЭЛЕМЕНТОВ ВАЛЮТЫ
+// ============================================
+function createCurrencyElements() {
+    const header = document.getElementById('header');
+    if (!header) {
+        console.error('❌ Header не найден');
+        return;
+    }
+    
+    // Ищем или создаем контейнер валюты
+    let currencyContainer = header.querySelector('.currency');
+    if (!currencyContainer) {
+        currencyContainer = document.createElement('div');
+        currencyContainer.className = 'currency';
+        header.appendChild(currencyContainer);
+    }
+    
+    // Создаем элемент для монет
+    if (!document.getElementById('coins')) {
+        const coinsSpan = document.createElement('span');
+        coinsSpan.id = 'coins';
+        coinsSpan.textContent = '🪙 0';
+        currencyContainer.appendChild(coinsSpan);
+        console.log('✅ Создан элемент #coins');
+    }
+    
+    // Создаем элемент для алмазов
+    if (!document.getElementById('diamonds')) {
+        const diamondsSpan = document.createElement('span');
+        diamondsSpan.id = 'diamonds';
+        diamondsSpan.textContent = '💎 0';
+        currencyContainer.appendChild(diamondsSpan);
+        console.log('✅ Создан элемент #diamonds');
+    }
+    
+    // Обновляем ссылки в elements
+    elements.coins = document.getElementById('coins');
+    elements.diamonds = document.getElementById('diamonds');
+}
+
+// ============================================
+// 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================
 const formatNumber = (num) => {
     if (num === undefined || num === null || isNaN(num)) return '0';
@@ -98,7 +153,7 @@ const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // ============================================
-// 7. ЗАГРУЗКА/СОХРАНЕНИЕ
+// 8. ЗАГРУЗКА/СОХРАНЕНИЕ
 // ============================================
 const loadGame = () => {
     try {
@@ -136,7 +191,7 @@ const saveGame = () => {
 };
 
 // ============================================
-// 8. ВАЛИДАЦИЯ ДАННЫХ
+// 9. ВАЛИДАЦИЯ ДАННЫХ
 // ============================================
 const validateGameData = (data) => {
     if (!data?.pet?.health || !data?.user?.coins) return false;
@@ -157,61 +212,14 @@ const validateGameData = (data) => {
 };
 
 // ============================================
-// 9. ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ)
+// 10. ⭐ ОБНОВЛЕНИЕ ВАЛЮТЫ (ГЛАВНОЕ) ⭐
 // ============================================
-const updateUI = () => {
-    const { pet, user } = state;
+function updateCurrencyDisplay() {
+    // Получаем актуальные элементы
+    let coinsEl = document.getElementById('coins');
+    let diamondsEl = document.getElementById('diamonds');
     
-    // 1. Питомец
-    if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
-    if (elements.petName) elements.petName.textContent = pet.name;
-    if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
-    
-    // 2. Бары
-    const bars = [
-        { el: elements.healthBar, val: pet.health, id: 'healthBar' },
-        { el: elements.energyBar, val: pet.energy, id: 'energyBar' },
-        { el: elements.moodBar, val: pet.mood, id: 'moodBar' },
-        { el: elements.hungerBar, val: pet.hunger, id: 'hungerBar' }
-    ];
-    
-    bars.forEach(({ el, val, id }) => {
-        const element = el || document.getElementById(id);
-        if (element) {
-            const v = Math.round(clamp(val, 0, 100));
-            element.style.width = v + '%';
-            element.textContent = v + '%';
-            element.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
-        }
-    });
-    
-    // 3. Информация пользователя
-    if (elements.userName) elements.userName.textContent = user.name;
-    if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
-    
-    // 4. ⭐ ВАЛЮТА (ГЛАВНОЕ ИСПРАВЛЕНИЕ) ⭐
-    updateCurrencyDisplay();
-};
-
-// ============================================
-// 9.1 ОБНОВЛЕНИЕ ВАЛЮТЫ (НОВАЯ ФУНКЦИЯ)
-// ============================================
-const updateCurrencyDisplay = () => {
-    // Получаем элементы (с проверкой)
-    let coinsEl = elements.coins || document.getElementById('coins');
-    let diamondsEl = elements.diamonds || document.getElementById('diamonds');
-    
-    // Если элементы не найдены - пробуем найти через querySelector
-    if (!coinsEl) {
-        coinsEl = document.querySelector('.currency span:first-child');
-        if (coinsEl) elements.coins = coinsEl;
-    }
-    if (!diamondsEl) {
-        diamondsEl = document.querySelector('.currency span:last-child');
-        if (diamondsEl) elements.diamonds = diamondsEl;
-    }
-    
-    // Если всё ещё не найдены - создаем
+    // Если элементы не найдены - создаем
     if (!coinsEl || !diamondsEl) {
         console.warn('⚠️ Элементы валюты не найдены, создаем...');
         createCurrencyElements();
@@ -231,50 +239,47 @@ const updateCurrencyDisplay = () => {
         diamondsEl.textContent = `💎 ${formatNumber(diamonds)}`;
         console.log('💎 Алмазы обновлены:', diamonds);
     }
+}
+
+// ============================================
+// 11. ОБНОВЛЕНИЕ UI
+// ============================================
+const updateUI = () => {
+    const { pet, user } = state;
+    
+    // Питомец
+    if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
+    if (elements.petName) elements.petName.textContent = pet.name;
+    if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
+    
+    // Бары
+    const bars = [
+        { el: elements.healthBar, val: pet.health, id: 'healthBar' },
+        { el: elements.energyBar, val: pet.energy, id: 'energyBar' },
+        { el: elements.moodBar, val: pet.mood, id: 'moodBar' },
+        { el: elements.hungerBar, val: pet.hunger, id: 'hungerBar' }
+    ];
+    
+    bars.forEach(({ el, val, id }) => {
+        const element = el || document.getElementById(id);
+        if (element) {
+            const v = Math.round(clamp(val, 0, 100));
+            element.style.width = v + '%';
+            element.textContent = v + '%';
+            element.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
+        }
+    });
+    
+    // Информация пользователя
+    if (elements.userName) elements.userName.textContent = user.name;
+    if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
+    
+    // ⭐ ОБНОВЛЕНИЕ ВАЛЮТЫ ⭐
+    updateCurrencyDisplay();
 };
 
 // ============================================
-// 9.2 СОЗДАНИЕ ЭЛЕМЕНТОВ ВАЛЮТЫ
-// ============================================
-const createCurrencyElements = () => {
-    const header = document.getElementById('header');
-    if (!header) {
-        console.error('❌ Header не найден');
-        return;
-    }
-    
-    // Ищем или создаем контейнер валюты
-    let currencyContainer = header.querySelector('.currency');
-    if (!currencyContainer) {
-        currencyContainer = document.createElement('div');
-        currencyContainer.className = 'currency';
-        header.appendChild(currencyContainer);
-    }
-    
-    // Создаем элементы
-    if (!document.getElementById('coins')) {
-        const coinsSpan = document.createElement('span');
-        coinsSpan.id = 'coins';
-        coinsSpan.textContent = '🪙 0';
-        currencyContainer.appendChild(coinsSpan);
-        console.log('✅ Создан #coins');
-    }
-    
-    if (!document.getElementById('diamonds')) {
-        const diamondsSpan = document.createElement('span');
-        diamondsSpan.id = 'diamonds';
-        diamondsSpan.textContent = '💎 0';
-        currencyContainer.appendChild(diamondsSpan);
-        console.log('✅ Создан #diamonds');
-    }
-    
-    // Обновляем ссылки
-    elements.coins = document.getElementById('coins');
-    elements.diamonds = document.getElementById('diamonds');
-};
-
-// ============================================
-// 10. СТАТУС ПИТОМЦА
+// 12. СТАТУС ПИТОМЦА
 // ============================================
 const getPetStatus = () => {
     const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
@@ -288,7 +293,7 @@ const getPetStatus = () => {
 };
 
 // ============================================
-// 11. ДЕЙСТВИЯ С ПИТОМЦЕМ
+// 13. ДЕЙСТВИЯ С ПИТОМЦЕМ
 // ============================================
 const safeAction = (action, callback, requireItem = null) => {
     if (typeof callback !== 'function') return false;
@@ -304,7 +309,8 @@ const safeAction = (action, callback, requireItem = null) => {
     }
     
     if (requireItem && (state.inventory[requireItem] || 0) <= 0) {
-        showNotification(`❌ Нет ${requireItem === 'food' ? 'еды' : requireItem === 'toy' ? 'игрушек' : 'лекарств'}!`);
+        const names = { food: 'еды', toy: 'игрушек', medicine: 'лекарств' };
+        showNotification(`❌ Нет ${names[requireItem] || requireItem}!`);
         return false;
     }
     
@@ -350,7 +356,7 @@ const sleepPet = () => safeAction('sleep', () => {
 });
 
 // ============================================
-// 12. СИСТЕМА УРОВНЕЙ
+// 14. СИСТЕМА УРОВНЕЙ
 // ============================================
 const addExp = (amount) => {
     state.pet.exp += amount;
@@ -371,7 +377,7 @@ const addExp = (amount) => {
 };
 
 // ============================================
-// 13. МАГАЗИН (ИСПРАВЛЕННЫЙ)
+// 15. ⭐ МАГАЗИН (ИСПРАВЛЕННЫЙ) ⭐
 // ============================================
 const buyItem = (type) => {
     const price = SHOP_PRICES[type];
@@ -383,7 +389,6 @@ const buyItem = (type) => {
     const coins = Math.floor(state.user.coins);
     const diamonds = Math.floor(state.user.diamonds);
     
-    // Проверка средств
     if (price.coins > 0 && coins < price.coins) {
         showNotification(`❌ Нужно ${price.coins} монет, у вас ${coins}`);
         return;
@@ -397,19 +402,18 @@ const buyItem = (type) => {
     state.user.coins = Math.max(0, coins - price.coins);
     state.user.diamonds = Math.max(0, diamonds - price.diamonds);
     
-    // Выдача товара
+    // Выдача
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
-    // ⭐ ОБНОВЛЕНИЕ (ВАЖНО) ⭐
-    updateUI();              // Обновляет всё
-    updateCurrencyDisplay(); // Дополнительное обновление валюты
+    // ⭐ ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ⭐
+    updateUI();
+    updateCurrencyDisplay(); // Двойное обновление для надежности
     saveGame();
     
-    // Уведомление
     showNotification(`✅ Куплено: ${price.emoji} ${price.name}! Осталось: 🪙${state.user.coins}`);
     console.log(`🛒 Покупка: ${type} (${price.coins} монет) → Осталось: ${state.user.coins}`);
 };
@@ -425,10 +429,10 @@ const changePetSkin = () => {
 };
 
 // ============================================
-// 14. РЕФЕРАЛЬНАЯ СИСТЕМА
+// 16. РЕФЕРАЛЬНАЯ СИСТЕМА
 // ============================================
 const generateReferralLink = () => {
-    const link = `https://t.me/nnvtamagochi_bot?start=ref_${state.user.id}`;
+    const link = `https://t.me/YourBotUsername?start=ref_${state.user.id}`;
     if (elements.refLink) elements.refLink.textContent = link;
     return link;
 };
@@ -445,7 +449,6 @@ const shareReferral = () => {
         navigator.clipboard?.writeText(link).then(() => {
             showNotification('📋 Ссылка скопирована!');
         }).catch(() => {
-            // fallback
             const input = document.createElement('input');
             input.value = link;
             document.body.appendChild(input);
@@ -458,7 +461,7 @@ const shareReferral = () => {
 };
 
 // ============================================
-// 15. ИГРОВОЙ ЦИКЛ
+// 17. ИГРОВОЙ ЦИКЛ
 // ============================================
 let gameLoopInterval = null;
 
@@ -495,7 +498,7 @@ const startGameLoop = () => {
 };
 
 // ============================================
-// 16. ЕЖЕДНЕВНЫЙ БОНУС
+// 18. ЕЖЕДНЕВНЫЙ БОНУС
 // ============================================
 const checkDailyBonus = () => {
     const now = Date.now();
@@ -520,7 +523,7 @@ const checkDailyBonus = () => {
 };
 
 // ============================================
-// 17. РЕЙТИНГ
+// 19. РЕЙТИНГ
 // ============================================
 const updateRating = () => {
     const { pet, user } = state;
@@ -544,7 +547,7 @@ const updateRating = () => {
 };
 
 // ============================================
-// 18. УВЕДОМЛЕНИЯ
+// 20. УВЕДОМЛЕНИЯ
 // ============================================
 const showNotification = (message) => {
     console.log('📢', message);
@@ -588,7 +591,7 @@ const showNotification = (message) => {
 };
 
 // ============================================
-// 19. НАВИГАЦИЯ
+// 21. НАВИГАЦИЯ
 // ============================================
 const setupNavigation = () => {
     const buttons = document.querySelectorAll('.nav-btn');
@@ -608,7 +611,7 @@ const setupNavigation = () => {
 };
 
 // ============================================
-// 20. НАСТРОЙКА КНОПОК (ОПТИМИЗИРОВАННАЯ)
+// 22. НАСТРОЙКА КНОПОК
 // ============================================
 const setupButtons = () => {
     const actions = {
@@ -629,7 +632,6 @@ const setupButtons = () => {
         }
     });
     
-    // Кнопки магазина
     document.querySelectorAll('.item').forEach(el => {
         el.addEventListener('click', (e) => {
             e.preventDefault();
@@ -642,7 +644,7 @@ const setupButtons = () => {
 };
 
 // ============================================
-// 21. ТЕМА TELEGRAM
+// 23. ТЕМА TELEGRAM
 // ============================================
 const setupTelegramTheme = () => {
     if (!tg?.themeParams) return;
@@ -658,7 +660,7 @@ const setupTelegramTheme = () => {
 };
 
 // ============================================
-// 22. ИНИЦИАЛИЗАЦИЯ
+// 24. ИНИЦИАЛИЗАЦИЯ
 // ============================================
 const init = () => {
     console.log('🚀 Инициализация...');
@@ -684,7 +686,7 @@ const init = () => {
 };
 
 // ============================================
-// 23. ГЛОБАЛЬНЫЙ ДОСТУП
+// 25. ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
 window.playPet = playPet;
@@ -693,12 +695,12 @@ window.sleepPet = sleepPet;
 window.buyItem = buyItem;
 window.shareReferral = shareReferral;
 window.updateUI = updateUI;
+window.updateCurrencyDisplay = updateCurrencyDisplay;
 window.saveGame = saveGame;
 window.state = state;
-window.showNotification = showNotification;
 
 // ============================================
-// 24. ЗАПУСК
+// 26. ЗАПУСК
 // ============================================
 document.addEventListener('DOMContentLoaded', init);
 console.log('📦 app.js загружен');
