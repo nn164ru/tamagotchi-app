@@ -13,10 +13,6 @@
     --shadow: rgba(0,0,0,0.1);
     --button-bg: #0088cc;
     --button-text: #ffffff;
-    --progress-health: #ff4444;
-    --progress-energy: #ffaa00;
-    --progress-mood: #44ff44;
-    --progress-hunger: #44aaff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,7 +24,6 @@
         --border-color: #444444;
         --shadow: rgba(0,0,0,0.3);
         --button-bg: #0099ff;
-        --button-text: #ffffff;
     }
 }
 
@@ -110,6 +105,11 @@ section.active {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* Pet Section */
 .pet-container {
     text-align: center;
@@ -153,23 +153,32 @@ section.active {
 
 .progress-bar {
     width: 100%;
-    height: 20px;
+    height: 24px;
     background: var(--bg-secondary);
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--border-color);
+    position: relative;
 }
 
 .progress-bar div {
     height: 100%;
     transition: width 0.5s ease;
     border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    min-width: 30px;
 }
 
-#healthBar { background: var(--progress-health); }
-#energyBar { background: var(--progress-energy); }
-#moodBar { background: var(--progress-mood); }
-#hungerBar { background: var(--progress-hunger); }
+#healthBar { background: #4CAF50; }
+#energyBar { background: #FFA726; }
+#moodBar { background: #42A5F5; }
+#hungerBar { background: #EF5350; }
 
 .actions {
     display: grid;
@@ -245,36 +254,108 @@ section.active {
 }
 
 /* Referral */
-#referralInfo {
-    text-align: center;
-    padding: 20px 0;
+.referral-info {
+    padding: 15px 0;
 }
 
-#referralInfo p {
-    margin-bottom: 15px;
-    font-size: 16px;
+.referral-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-#referralInfo button {
-    padding: 12px 30px;
-    border: none;
+.stat-item {
+    background: var(--bg-secondary);
+    padding: 12px;
     border-radius: 10px;
-    background: var(--button-bg);
-    color: var(--button-text);
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-bottom: 15px;
-    touch-action: manipulation;
+    text-align: center;
+    border: 1px solid var(--border-color);
 }
 
-#referralLink {
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.referral-link-box {
+    background: var(--bg-secondary);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+    border: 1px solid var(--border-color);
+}
+
+.referral-link-box p {
+    margin-bottom: 10px;
     font-size: 14px;
     color: var(--text-secondary);
+}
+
+.link-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.link-container span {
+    flex: 1;
     word-break: break-all;
-    padding: 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.copy-btn {
+    padding: 8px 15px;
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 14px;
+    transition: transform 0.2s;
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+.share-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 10px;
+}
+
+.share-btn:active {
+    transform: scale(0.98);
+}
+
+.referral-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px;
     background: var(--bg-secondary);
-    border-radius: 8px;
+    border-radius: 6px;
+    margin: 5px 0;
+    border: 1px solid var(--border-color);
 }
 
 /* Bottom Navigation */
@@ -316,44 +397,20 @@ section.active {
 
 /* Responsive */
 @media (max-width: 480px) {
-    #header {
-        padding: 12px 15px;
-    }
-    #mainContent {
-        padding: 15px;
-        padding-bottom: 75px;
-    }
-    #petEmoji {
-        font-size: 80px;
-    }
-    .actions {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-    .shop-items {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
+    #header { padding: 12px 15px; }
+    #mainContent { padding: 15px; padding-bottom: 75px; }
+    #petEmoji { font-size: 80px; }
+    .actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .shop-items { grid-template-columns: 1fr 1fr; gap: 8px; }
 }
 
 @media (max-width: 360px) {
-    #petEmoji {
-        font-size: 60px;
-    }
-    .currency {
-        font-size: 12px;
-        gap: 10px;
-    }
-    #userName {
-        font-size: 14px;
-    }
-    .actions button {
-        font-size: 12px;
-        padding: 10px;
-    }
+    #petEmoji { font-size: 60px; }
+    .currency { font-size: 12px; gap: 10px; }
+    #userName { font-size: 14px; }
+    .actions button { font-size: 12px; padding: 10px; }
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 4px;
 }
