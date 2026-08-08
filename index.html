@@ -10,10 +10,7 @@
     
     <!-- Защита от инспектирования -->
     <script>
-        // Блокировка правой кнопки мыши
         document.addEventListener('contextmenu', e => e.preventDefault());
-        
-        // Блокировка DevTools
         document.addEventListener('keydown', function(e) {
             if (e.key === 'F12' || 
                 (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
@@ -22,34 +19,22 @@
                 return false;
             }
         });
-        
-        // Обнаружение DevTools
-        let devtools = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-        if (devtools) {
-            const checkDevTools = setInterval(() => {
-                if (window.outerWidth - window.innerWidth > 100 || 
-                    window.outerHeight - window.innerHeight > 100) {
-                    console.warn('⚠️ Обнаружены инструменты разработчика!');
-                    // Можно применить меры
-                }
-            }, 1000);
-        }
     </script>
 </head>
 <body>
-    <!-- Контент приложения -->
     <div id="app">
         <!-- Верхняя панель -->
-<header id="header">
-    <div class="user-info">
-        <span id="userName">Гость</span>
-        <span id="userLevel">Уровень 1</span>
-    </div>
-    <div class="currency">
-        <span id="coins">🪙 0</span>
-        <span id="diamonds">💎 0</span>
-    </div>
-</header>
+        <header id="header">
+            <div class="user-info">
+                <span id="userName">Гость</span>
+                <span id="userLevel">Уровень 1</span>
+            </div>
+            <div class="currency">
+                <span id="coins">🪙 0</span>
+                <span id="diamonds">💎 0</span>
+            </div>
+        </header>
+
         <!-- Основной контент -->
         <main id="mainContent">
             <!-- Тамагочи -->
@@ -62,51 +47,52 @@
                 <div class="stats">
                     <div class="stat">
                         <span>❤️ Здоровье</span>
-                        <div class="progress-bar"><div id="healthBar" style="width: 100%"></div></div>
+                        <div class="progress-bar"><div id="healthBar" style="width: 100%">100%</div></div>
                     </div>
                     <div class="stat">
                         <span>⚡ Энергия</span>
-                        <div class="progress-bar"><div id="energyBar" style="width: 100%"></div></div>
+                        <div class="progress-bar"><div id="energyBar" style="width: 100%">100%</div></div>
                     </div>
                     <div class="stat">
                         <span>😊 Настроение</span>
-                        <div class="progress-bar"><div id="moodBar" style="width: 100%"></div></div>
+                        <div class="progress-bar"><div id="moodBar" style="width: 100%">100%</div></div>
                     </div>
                     <div class="stat">
                         <span>🍔 Сытость</span>
-                        <div class="progress-bar"><div id="hungerBar" style="width: 100%"></div></div>
+                        <div class="progress-bar"><div id="hungerBar" style="width: 100%">100%</div></div>
                     </div>
                 </div>
                 <div class="actions">
-                    <button onclick="feedPet()">🍕 Покормить</button>
-                    <button onclick="playPet()">🎮 Играть</button>
-                    <button onclick="healPet()">💊 Лечить</button>
-                    <button onclick="sleepPet()">😴 Спать</button>
+                    <button id="feedBtn">🍕 Покормить</button>
+                    <button id="playBtn">🎮 Играть</button>
+                    <button id="healBtn">💊 Лечить</button>
+                    <button id="sleepBtn">😴 Спать</button>
                 </div>
             </section>
 
-         <!-- Магазин -->
-<section id="shopSection">
-    <h2>🛒 Магазин</h2>
-    <div class="shop-items">
-        <div class="item" onclick="buyItem('food')">
-            <span>🍕 Еда</span>
-            <span>🪙 10</span>  <!-- ← БЫЛО 120, СТАЛО 10 -->
-        </div>
-        <div class="item" onclick="buyItem('toy')">
-            <span>🧸 Игрушка</span>
-            <span>🪙 15</span>  <!-- ← БЫЛО 20, СТАЛО 15 -->
-        </div>
-        <div class="item" onclick="buyItem('medicine')">
-            <span>💊 Лекарство</span>
-            <span>🪙 20</span>  <!-- ← БЫЛО 30, СТАЛО 20 -->
-        </div>
-        <div class="item" onclick="buyItem('skin')">
-            <span>🎨 Скин</span>
-            <span>💎 5</span>
-        </div>
-    </div>
-</section>
+            <!-- Магазин -->
+            <section id="shopSection">
+                <h2>🛒 Магазин</h2>
+                <div class="shop-items">
+                    <div class="item" data-item="food">
+                        <span>🍕 Еда</span>
+                        <span>🪙 10</span>
+                    </div>
+                    <div class="item" data-item="toy">
+                        <span>🧸 Игрушка</span>
+                        <span>🪙 15</span>
+                    </div>
+                    <div class="item" data-item="medicine">
+                        <span>💊 Лекарство</span>
+                        <span>🪙 20</span>
+                    </div>
+                    <div class="item" data-item="skin">
+                        <span>🎨 Скин</span>
+                        <span>💎 5</span>
+                    </div>
+                </div>
+            </section>
+
             <!-- Рейтинг -->
             <section id="ratingSection">
                 <h2>🏆 Рейтинг</h2>
@@ -120,10 +106,31 @@
             <!-- Реферальная система -->
             <section id="referralSection">
                 <h2>👥 Реферальная система</h2>
-                <div id="referralInfo">
-                    <p>Приглашайте друзей и получайте бонусы!</p>
-                    <button onclick="shareReferral()">📤 Пригласить</button>
-                    <div id="referralLink">Ваша ссылка: <span id="refLink">загрузка...</span></div>
+                <div class="referral-info">
+                    <div class="referral-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">👥 Приглашено друзей</span>
+                            <span class="stat-value" id="refCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">🪙 Заработано</span>
+                            <span class="stat-value" id="refEarned">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="referral-link-box">
+                        <p>📋 Ваша реферальная ссылка:</p>
+                        <div class="link-container">
+                            <span id="refLink">Загрузка...</span>
+                            <button onclick="copyReferralLink()" class="copy-btn">📋 Копировать</button>
+                        </div>
+                    </div>
+                    
+                    <button onclick="shareReferral()" class="share-btn">📤 Пригласить друга</button>
+                    
+                    <div id="referralListContainer" style="margin-top: 15px;">
+                        <p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>
+                    </div>
                 </div>
             </section>
         </main>
@@ -137,7 +144,6 @@
         </nav>
     </div>
 
-    <!-- Подключение модулей -->
     <script src="security.js"></script>
     <script src="app.js"></script>
 </body>
