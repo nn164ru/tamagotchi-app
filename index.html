@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🐾 Тамагочи</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    
+    <style>
+        /* ===== СТИЛИ ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f0f0f0;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --border-color: #e0e0e0;
+            --button-bg: #0088cc;
+            --button-text: #ffffff;
+            --danger: #f44336;
+            --success: #4CAF50;
+            --warning: #FFA726;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --text-primary: #ffffff;
+                --text-secondary: #cccccc;
+                --border-color: #444444;
+                --button-bg: #0099ff;
+            }
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #app {
+            max-width: 480px;
+            width: 100%;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* ===== ЗАЩИТНЫЙ ОВЕРЛЕЙ ===== */
+        #securityOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        #securityOverlay.active { display: flex; }
+        #securityOverlay .icon { font-size: 60px; margin-bottom: 20px; }
+        #securityOverlay .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        #securityOverlay .desc { font-size: 16px; opacity: 0.8; max-width: 300px; }
+        
+        /* ===== HEADER ===== */
+        #header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .user-info { display: flex; flex-direction: column; gap: 2px; }
+        #userName { font-weight: bold; font-size: 16px; }
+        #userLevel { font-size: 12px; color: var(--text-secondary); }
+        .currency { display: flex; gap: 15px; font-size: 14px; font-weight: bold; align-items: center; }
+        
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+        .status-dot.online { background: var(--success); }
+        .status-dot.offline { background: var(--danger); }
+        .status-dot.warning { background: var(--warning); animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* ===== MAIN ===== */
+        #mainContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+        
+        section { display: none; animation: fadeIn 0.3s ease; }
+        section.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .shake { animation: shake 0.5s ease; }
+        
+        .pet-container { text-align: center; padding: 20px 0; }
+        #petEmoji { font-size: 100px; line-height: 1.2; transition: transform 0.3s; user-select: none; }
+        #petEmoji:hover { transform: scale(1.1); }
+        #petName { font-size: 24px; font-weight: bold; margin: 10px 0 5px; }
+        #petStatus { font-size: 16px; color: var(--text-secondary); }
+        
+        .stats { margin: 20px 0; }
+        .stat { margin-bottom: 12px; }
+        .stat span { display: block; font-size: 14px; margin-bottom: 4px; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .progress-bar div {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+            min-width: 30px;
+        }
+        
+        #healthBar { background: var(--success); }
+        #energyBar { background: var(--warning); }
+        #moodBar { background: #42A5F5; }
+        #hungerBar { background: var(--danger); }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .actions button {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            touch-action: manipulation;
+            position: relative;
+            overflow: hidden;
+        }
+        .actions button:active { transform: scale(0.95); opacity: 0.8; }
+        .actions button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .actions button .cooldown-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 50%;
+            min-width: 18px;
+        }
+        
+        .shop-items {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .item {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            position: relative;
+        }
+        .item:active { transform: scale(0.95); }
+        .item span:first-child { font-size: 18px; }
+        .item span:last-child { font-size: 14px; color: var(--text-secondary); }
+        .item .price-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--button-bg);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+        
+        .rating-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rating-item .medal { font-size: 20px; }
+        .rating-item .score { font-weight: bold; color: var(--text-secondary); }
+        .rating-item.top1 { border-color: gold; background: rgba(255,215,0,0.1); }
+        .rating-item.top2 { border-color: silver; background: rgba(192,192,192,0.1); }
+        .rating-item.top3 { border-color: #cd7f32; background: rgba(205,127,50,0.1); }
+        
+        #bottomNav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 480px;
+            width: 100%;
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+        }
+        
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            padding: 8px 16px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: transform 0.2s, opacity 0.2s;
+            position: relative;
+        }
+        .nav-btn.active { opacity: 1; transform: scale(1.1); }
+        .nav-btn:active { transform: scale(0.9); }
+        .nav-btn .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 50%;
+            min-width: 18px;
+        }
+        
+        .referral-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .stat-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .stat-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+        .stat-value { display: block; font-size: 24px; font-weight: bold; }
+        
+        .referral-link-box {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+        }
+        .link-container { display: flex; gap: 10px; align-items: center; }
+        .link-container span { flex: 1; word-break: break-all; font-size: 12px; }
+        
+        .copy-btn, .share-btn {
+            padding: 10px 15px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .copy-btn:active, .share-btn:active { transform: scale(0.95); }
+        .share-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .referral-item {
+            display: flex;
+            gap: 10px;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin: 5px 0;
+            border: 1px solid var(--border-color);
+        }
+        #referralListContainer { margin-top: 15px; }
+        
+        /* ===== УВЕДОМЛЕНИЕ ===== */
+        #notificationContainer {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9998;
+            width: 90%;
+            max-width: 400px;
+            pointer-events: none;
+        }
+        .notification {
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            animation: slideDown 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .notification.success { border-left: 4px solid var(--success); }
+        .notification.error { border-left: 4px solid var(--danger); }
+        .notification.warning { border-left: 4px solid var(--warning); }
+        .notification .icon { font-size: 20px; }
+        .notification .text { flex: 1; }
+        .notification .close {
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 18px;
+            transition: opacity 0.2s;
+        }
+        .notification .close:hover { opacity: 1; }
+        
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 480px) {
+            #header { padding: 12px 15px; }
+            #mainContent { padding: 15px; padding-bottom: 75px; }
+            #petEmoji { font-size: 80px; }
+            .actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .shop-items { grid-template-columns: 1fr 1fr; gap: 8px; }
+        }
+        @media (max-width: 360px) {
+            #petEmoji { font-size: 60px; }
+            .currency { font-size: 12px; gap: 10px; }
+            #userName { font-size: 14px; }
+            .actions button { font-size: 12px; padding: 10px; }
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <!-- ===== ЗАЩИТНЫЙ ОВЕРЛЕЙ ===== -->
+    <div id="securityOverlay">
+        <div class="icon">🛡️</div>
+        <div class="title">Обнаружена угроза</div>
+        <div class="desc" id="securityMessage">Подозрительная активность заблокирована</div>
+    </div>
+
+    <!-- ===== КОНТЕЙНЕР УВЕДОМЛЕНИЙ ===== -->
+    <div id="notificationContainer"></div>
+
+    <div id="app">
+        <!-- ===== HEADER ===== -->
+        <header id="header">
+            <div class="user-info">
+                <span id="userName">Загрузка...</span>
+                <span id="userLevel">Уровень 1</span>
+            </div>
+            <div class="currency">
+                <span id="coins">🪙 0</span>
+                <span id="diamonds">💎 0</span>
+                <span id="statusDot" class="status-dot offline"></span>
+            </div>
+        </header>
+
+        <!-- ===== MAIN ===== -->
+        <main id="mainContent">
+            <!-- PET -->
+            <section id="petSection" class="active">
+                <div class="pet-container">
+                    <div id="petEmoji">🐣</div>
+                    <div id="petName">Питомец</div>
+                    <div id="petStatus">Счастлив</div>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span>❤️ Здоровье <span id="healthVal">100</span>%</span>
+                        <div class="progress-bar"><div id="healthBar" style="width: 100%">100%</div></div>
+                    </div>
+                    <div class="stat">
+                        <span>⚡ Энергия <span id="energyVal">100</span>%</span>
+                        <div class="progress-bar"><div id="energyBar" style="width: 100%">100%</div></div>
+                    </div>
+                    <div class="stat">
+                        <span>😊 Настроение <span id="moodVal">100</span>%</span>
+                        <div class="progress-bar"><div id="moodBar" style="width: 100%">100%</div></div>
+                    </div>
+                    <div class="stat">
+                        <span>🍔 Сытость <span id="hungerVal">100</span>%</span>
+                        <div class="progress-bar"><div id="hungerBar" style="width: 100%">100%</div></div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="feedBtn">🍕 Покормить</button>
+                    <button id="playBtn">🎮 Играть</button>
+                    <button id="healBtn">💊 Лечить</button>
+                    <button id="sleepBtn">😴 Спать</button>
+                </div>
+            </section>
+
+            <!-- SHOP -->
+            <section id="shopSection">
+                <h2>🛒 Магазин</h2>
+                <div class="shop-items">
+                    <div class="item" data-item="food">
+                        <span>🍕 Еда</span>
+                        <span>🪙 10</span>
+                        <span class="price-badge">🪙10</span>
+                    </div>
+                    <div class="item" data-item="toy">
+                        <span>🧸 Игрушка</span>
+                        <span>🪙 15</span>
+                        <span class="price-badge">🪙15</span>
+                    </div>
+                    <div class="item" data-item="medicine">
+                        <span>💊 Лекарство</span>
+                        <span>🪙 20</span>
+                        <span class="price-badge">🪙20</span>
+                    </div>
+                    <div class="item" data-item="skin">
+                        <span>🎨 Скин</span>
+                        <span>💎 5</span>
+                        <span class="price-badge">💎5</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RATING -->
+            <section id="ratingSection">
+                <h2>🏆 Рейтинг</h2>
+                <div id="ratingList">
+                    <div class="rating-item">Загрузка рейтинга...</div>
+                </div>
+            </section>
+
+            <!-- REFERRAL -->
+            <section id="referralSection">
+                <h2>👥 Реферальная система</h2>
+                <div class="referral-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">👥 Приглашено</span>
+                        <span class="stat-value" id="refCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🪙 Заработано</span>
+                        <span class="stat-value" id="refEarned">0</span>
+                    </div>
+                </div>
+                
+                <div class="referral-link-box">
+                    <p>📋 Ваша ссылка:</p>
+                    <div class="link-container">
+                        <span id="refLink">Загрузка...</span>
+                        <button onclick="copyReferralLink()" class="copy-btn">📋 Копировать</button>
+                    </div>
+                </div>
+                
+                <button onclick="shareReferral()" class="share-btn">📤 Пригласить друга</button>
+                
+                <div id="referralListContainer">
+                    <p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- ===== BOTTOM NAV ===== -->
+        <nav id="bottomNav">
+            <button class="nav-btn active" data-section="petSection">🐾</button>
+            <button class="nav-btn" data-section="shopSection">🛒</button>
+            <button class="nav-btn" data-section="ratingSection">🏆</button>
+            <button class="nav-btn" data-section="referralSection">👥</button>
+        </nav>
+    </div>
+
+    <script>
+        // ============================================
+        // ⭐ КОНФИГУРАЦИЯ ⭐
+        // ============================================
+        // ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ SUPABASE
+        const SUPABASE_URL = 'https://zvetxsfegwiulsbjtufs.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_mA2pfIxBGZVIP68OQmj1pg_oKRo3KDL';
+        
+        const CONFIG = {
+            MAX_ACTIONS_PER_MINUTE: 10,
+            MAX_COINS: 9999999,
+            MAX_DIAMONDS: 999999,
+            MAX_LEVEL: 1000,
+            COOLDOWN_SECONDS: 2,
+            AUTO_SAVE_INTERVAL: 30000,
+            GAME_LOOP_INTERVAL: 5000,
+            REFERRAL_BONUS: 50,
+            REFERRAL_DIAMONDS: 5,
+            DAILY_BONUS: 50
+        };
+
+        // ============================================
+        // 🛡️ МОДУЛЬ БЕЗОПАСНОСТИ
+        // ============================================
+        class SecurityModule {
+            constructor() {
+                this.secretKey = this.generateSecretKey();
+                this.sessionId = this.generateSessionId();
+                this.actionLog = [];
+                this.cheatFlags = {
+                    speedHack: false,
+                    memoryHack: false,
+                    debuggerDetected: false,
+                    spamDetected: false
+                };
+                this.lastActionTime = {};
+                this.detectionCount = 0;
+                this.maxDetections = 5;
+                this.init();
+            }
+
+            generateSecretKey() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 32; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+
+            generateSessionId() {
+                return 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+            }
+
+            init() {
+                this.protectConsole();
+                this.protectEval();
+                this.detectDebugger();
+                this.protectDOM();
+                this.setupFingerprint();
+                console.log('🛡️ Защита активирована');
+            }
+
+            // Защита консоли
+            protectConsole() {
+                const originalLog = console.log;
+                console.log = function(...args) {
+                    if (args.some(a => typeof a === 'string' && 
+                        (a.includes('localStorage') || a.includes('state') || a.includes('_sessionId')))) {
+                        return;
+                    }
+                    originalLog.apply(console, args);
+                };
+            }
+
+            // Защита от eval
+            protectEval() {
+                const originalEval = window.eval;
+                window.eval = function(code) {
+                    if (typeof code === 'string' && 
+                        (code.includes('localStorage') || code.includes('state'))) {
+                        return null;
+                    }
+                    return originalEval.call(window, code);
+                };
+            }
+
+            // Обнаружение отладчика
+            detectDebugger() {
+                let debuggerDetected = false;
+                
+                // Проверка размера окна
+                const checkSize = () => {
+                    if (window.outerWidth - window.innerWidth > 100 || 
+                        window.outerHeight - window.innerHeight > 100) {
+                        if (!debuggerDetected) {
+                            debuggerDetected = true;
+                            this.cheatFlags.debuggerDetected = true;
+                            this.triggerSecurity('debugger_detected');
+                        }
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Проверка через console.log
+                const checkConsole = () => {
+                    const originalLog = console.log;
+                    let detected = false;
+                    console.log = function() { detected = true; };
+                    console.log('%c', 'font-size: 999999px');
+                    console.log = originalLog;
+                    if (detected) {
+                        this.cheatFlags.debuggerDetected = true;
+                        this.triggerSecurity('debugger_detected');
+                    }
+                    return detected;
+                };
+
+                setInterval(() => {
+                    checkSize();
+                    checkConsole();
+                }, 5000);
+
+                checkSize();
+                checkConsole();
+            }
+
+            // Защита DOM
+            protectDOM() {
+                const protect = (selector) => {
+                    const el = document.querySelector(selector);
+                    if (el) {
+                        Object.defineProperty(el, 'innerHTML', {
+                            set: function(value) {
+                                if (typeof value === 'string' && 
+                                    (value.includes('<script') || value.includes('onerror'))) {
+                                    return;
+                                }
+                                this.textContent = value;
+                            }
+                        });
+                    }
+                };
+                protect('#app');
+                protect('#petEmoji');
+                protect('#petName');
+            }
+
+            // Фингерпринтинг
+            setupFingerprint() {
+                const components = [
+                    navigator.userAgent,
+                    screen.width,
+                    screen.height,
+                    navigator.language,
+                    navigator.platform,
+                    navigator.hardwareConcurrency || 0,
+                    navigator.deviceMemory || 0,
+                    Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    new Date().getTimezoneOffset()
+                ];
+                
+                const fingerprint = components.join('|');
+                const hash = this.hashString(fingerprint);
+                
+                const stored = localStorage.getItem('device_fingerprint');
+                if (!stored) {
+                    localStorage.setItem('device_fingerprint', hash);
+                    this._fingerprint = hash;
+                } else if (stored !== hash) {
+                    this.cheatFlags.memoryHack = true;
+                    this.triggerSecurity('fingerprint_mismatch');
+                } else {
+                    this._fingerprint = stored;
+                }
+            }
+
+            hashString(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return hash.toString(36);
+            }
+
+            // Проверка действия
+            checkAction(action, userId) {
+                const now = Date.now();
+                const key = `${userId}_${action}`;
+                const lastTime = this.lastActionTime[key] || 0;
+
+                // Проверка на спам
+                if (now - lastTime < CONFIG.COOLDOWN_SECONDS * 1000) {
+                    this.cheatFlags.spamDetected = true;
+                    return { allowed: false, reason: 'Подождите ' + CONFIG.COOLDOWN_SECONDS + ' секунд' };
+                }
+
+                // Логирование действий
+                this.actionLog.push({ action, userId, time: now });
+                if (this.actionLog.length > 100) this.actionLog.shift();
+
+                // Проверка скорости действий
+                const recentActions = this.actionLog.filter(a => now - a.time < 60000);
+                if (recentActions.length > CONFIG.MAX_ACTIONS_PER_MINUTE) {
+                    this.cheatFlags.speedHack = true;
+                    this.triggerSecurity('speed_hack');
+                    return { allowed: false, reason: 'Слишком много действий' };
+                }
+
+                this.lastActionTime[key] = now;
+                return { allowed: true };
+            }
+
+            // Проверка данных
+            validateData(data) {
+                if (!data || !data.user || !data.pet) return false;
+
+                // Проверка валюты
+                if (data.user.coins > CONFIG.MAX_COINS || data.user.coins < 0) return false;
+                if (data.user.diamonds > CONFIG.MAX_DIAMONDS || data.user.diamonds < 0) return false;
+                if (data.pet.level > CONFIG.MAX_LEVEL || data.pet.level < 1) return false;
+                
+                // Проверка NaN
+                if (isNaN(data.user.coins) || isNaN(data.user.diamonds)) return false;
+                if (isNaN(data.pet.health) || isNaN(data.pet.energy)) return false;
+                if (isNaN(data.pet.mood) || isNaN(data.pet.hunger)) return false;
+
+                return true;
+            }
+
+            // Триггер безопасности
+            triggerSecurity(type) {
+                this.detectionCount++;
+                console.warn('⚠️ Обнаружена угроза:', type);
+
+                // Показываем оверлей при критических угрозах
+                if (type === 'memory_hack' || type === 'speed_hack') {
+                    showSecurityOverlay('Обнаружена подозрительная активность. Доступ ограничен.');
+                }
+
+                // При превышении лимита - блокировка
+                if (this.detectionCount >= this.maxDetections) {
+                    this.lockGame();
+                }
+            }
+
+            // Блокировка игры
+            lockGame() {
+                showSecurityOverlay('🔒 Доступ заблокирован. Обратитесь к поддержке.');
+                document.querySelectorAll('button, .item').forEach(el => {
+                    el.disabled = true;
+                    el.style.opacity = '0.3';
+                    el.style.pointerEvents = 'none';
+                });
+            }
+
+            // Получение статуса
+            getStatus() {
+                return {
+                    sessionId: this.sessionId,
+                    fingerprint: this._fingerprint,
+                    cheatFlags: this.cheatFlags,
+                    detectionCount: this.detectionCount,
+                    isSecure: !Object.values(this.cheatFlags).some(f => f === true)
+                };
+            }
+        }
+
+        // ============================================
+        // 🛡️ ГЛОБАЛЬНАЯ ЗАЩИТА
+        // ============================================
+        let security = null;
+
+        function showSecurityOverlay(message) {
+            const overlay = document.getElementById('securityOverlay');
+            const msg = document.getElementById('securityMessage');
+            if (overlay && msg) {
+                msg.textContent = message || 'Подозрительная активность заблокирована';
+                overlay.classList.add('active');
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 5000);
+            }
+        }
+
+        // ============================================
+        // 1. TELEGRAM WEBAPP
+        // ============================================
+        const tg = window.Telegram.WebApp;
+        if (tg) tg.expand();
+
+        const userData = tg?.initDataUnsafe?.user || {
+            id: 'guest_' + Date.now().toString(36),
+            first_name: 'Гость',
+            username: 'guest'
+        };
+
+        // ============================================
+        // 2. SUPABASE
+        // ============================================
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let dbConnected = false;
+
+        async function checkConnection() {
+            try {
+                const { error } = await supabase.from('players').select('count').limit(1);
+                if (!error) {
+                    dbConnected = true;
+                    document.getElementById('statusDot').className = 'status-dot online';
+                } else {
+                    dbConnected = false;
+                    document.getElementById('statusDot').className = 'status-dot offline';
+                }
+            } catch (e) {
+                dbConnected = false;
+                document.getElementById('statusDot').className = 'status-dot offline';
+            }
+        }
+
+        // ============================================
+        // 3. СОСТОЯНИЕ
+        // ============================================
+        let state = {
+            pet: {
+                name: 'Питомец',
+                emoji: '🐣',
+                health: 100,
+                energy: 100,
+                mood: 100,
+                hunger: 100,
+                level: 1,
+                exp: 0,
+                expToNext: 100
+            },
+            user: {
+                id: userData.id?.toString() || 'guest_' + Date.now().toString(36),
+                name: userData.first_name || 'Гость',
+                coins: 100,
+                diamonds: 10,
+                rating: 0,
+                referrals: 0,
+                referralEarned: 0,
+                referralList: [],
+                totalPlayTime: 0,
+                lastLogin: Date.now(),
+                loginStreak: 1
+            },
+            inventory: {
+                food: 2,
+                toy: 1,
+                medicine: 1,
+                skins: ['🐣']
+            },
+            _timestamp: Date.now(),
+            _sessionId: null,
+            _fingerprint: null,
+            _checksum: null
+        };
+
+        // ============================================
+        // 4. ЗАЩИЩЕННЫЕ ОПЕРАЦИИ С БД
+        // ============================================
+        async function loadFromSupabase() {
+            if (!security || !security.validateData(state)) {
+                console.warn('⚠️ Нарушение целостности данных');
+                return false;
+            }
+
+            try {
+                const userId = state.user.id;
+                const { data, error } = await supabase
+                    .from('players')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (error) {
+                    if (error.code === 'PGRST116') return false;
+                    throw error;
+                }
+
+                if (data) {
+                    // Валидация данных из БД
+                    const validData = {
+                        pet: {
+                            health: data.health || 100,
+                            energy: data.energy || 100,
+                            mood: data.mood || 100,
+                            hunger: data.hunger || 100,
+                            level: data.level || 1,
+                            exp: data.exp || 0,
+                            emoji: data.pet_emoji || '🐣',
+                            name: data.pet_name || 'Питомец'
+                        },
+                        user: {
+                            coins: data.coins || 0,
+                            diamonds: data.diamonds || 0,
+                            rating: data.rating || 0,
+                            referrals: data.referrals || 0,
+                            referralEarned: data.referral_earned || 0,
+                            referralList: data.referral_list || [],
+                            totalPlayTime: data.total_play_time || 0,
+                            loginStreak: data.login_streak || 1,
+                            lastLogin: data.last_login || Date.now()
+                        },
+                        inventory: data.inventory || { food: 2, toy: 1, medicine: 1, skins: ['🐣'] }
+                    };
+
+                    if (security.validateData(validData)) {
+                        Object.assign(state.pet, validData.pet);
+                        Object.assign(state.user, validData.user);
+                        Object.assign(state.inventory, validData.inventory);
+                        state._timestamp = data._timestamp || Date.now();
+                        return true;
+                    }
+                }
+                return false;
+            } catch (e) {
+                console.error('❌ Ошибка загрузки:', e);
+                return false;
+            }
+        }
+
+        async function saveToSupabase() {
+            if (!security || !security.validateData(state)) {
+                console.warn('⚠️ Попытка сохранить невалидные данные');
+                return false;
+            }
+
+            try {
+                state._timestamp = Date.now();
+                state._sessionId = security.sessionId;
+                state._fingerprint = security._fingerprint;
+                state._checksum = security.hashString(JSON.stringify(state));
+
+                const saveData = {
+                    user_id: state.user.id,
+                    user_name: state.user.name,
+                    pet_name: state.pet.name,
+                    pet_emoji: state.pet.emoji,
+                    health: Math.round(state.pet.health),
+                    energy: Math.round(state.pet.energy),
+                    mood: Math.round(state.pet.mood),
+                    hunger: Math.round(state.pet.hunger),
+                    level: state.pet.level,
+                    exp: Math.round(state.pet.exp),
+                    coins: Math.round(state.user.coins),
+                    diamonds: Math.round(state.user.diamonds),
+                    rating: Math.round(state.user.rating),
+                    referrals: state.user.referrals || 0,
+                    referral_earned: state.user.referralEarned || 0,
+                    referral_list: state.user.referralList || [],
+                    total_play_time: state.user.totalPlayTime || 0,
+                    login_streak: state.user.loginStreak || 1,
+                    last_login: state.user.lastLogin || Date.now(),
+                    inventory: state.inventory,
+                    _timestamp: state._timestamp,
+                    _sessionId: state._sessionId,
+                    _fingerprint: state._fingerprint,
+                    _checksum: state._checksum,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('players')
+                    .upsert(saveData, { onConflict: 'user_id' });
+
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.error('❌ Ошибка сохранения:', e);
+                return false;
+            }
+        }
+
+        // ============================================
+        // 5. ВСПОМОГАТЕЛЬНЫЕ
+        // ============================================
+        function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function formatNumber(num) {
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            num = Math.floor(num);
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // ============================================
+        // 6. DOM
+        // ============================================
+        const $ = (id) => document.getElementById(id);
+        const el = {
+            petEmoji: $('petEmoji'),
+            petName: $('petName'),
+            petStatus: $('petStatus'),
+            healthBar: $('healthBar'),
+            healthVal: $('healthVal'),
+            energyBar: $('energyBar'),
+            energyVal: $('energyVal'),
+            moodBar: $('moodBar'),
+            moodVal: $('moodVal'),
+            hungerBar: $('hungerBar'),
+            hungerVal: $('hungerVal'),
+            userName: $('userName'),
+            userLevel: $('userLevel'),
+            coins: $('coins'),
+            diamonds: $('diamonds'),
+            refLink: $('refLink'),
+            ratingList: $('ratingList'),
+            refCount: $('refCount'),
+            refEarned: $('refEarned'),
+            referralListContainer: $('referralListContainer')
+        };
+
+        // ============================================
+        // 7. СТАТУС
+        // ============================================
+        function getPetStatus() {
+            const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
+            if (avg > 90) return '🌟 Счастлив';
+            if (avg > 75) return '😊 Доволен';
+            if (avg > 60) return '😐 Нормально';
+            if (avg > 45) return '😕 Грустноват';
+            if (avg > 30) return '😢 Грустен';
+            if (avg > 15) return '😰 Плохо';
+            return '💀 Очень плохо!';
+        }
+
+        // ============================================
+        // 8. UI
+        // ============================================
+        function updateUI() {
+            const pet = state.pet;
+            const user = state.user;
+
+            if (el.userName) el.userName.textContent = user.name || 'Гость';
+            if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
+            if (el.petEmoji) el.petEmoji.textContent = pet.emoji;
+            if (el.petName) el.petName.textContent = pet.name;
+            if (el.petStatus) el.petStatus.textContent = getPetStatus();
+
+            const bars = [
+                { id: 'healthBar', valId: 'healthVal', value: pet.health },
+                { id: 'energyBar', valId: 'energyVal', value: pet.energy },
+                { id: 'moodBar', valId: 'moodVal', value: pet.mood },
+                { id: 'hungerBar', valId: 'hungerVal', value: pet.hunger }
+            ];
+
+            bars.forEach(bar => {
+                const elBar = document.getElementById(bar.id);
+                const elVal = document.getElementById(bar.valId);
+                if (elBar) {
+                    const v = Math.round(clamp(bar.value, 0, 100));
+                    elBar.style.width = v + '%';
+                    elBar.textContent = v + '%';
+                    if (elVal) elVal.textContent = v;
+                    elBar.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
+                }
+            });
+
+            if (el.coins) el.coins.textContent = `🪙 ${formatNumber(Math.floor(user.coins))}`;
+            if (el.diamonds) el.diamonds.textContent = `💎 ${formatNumber(Math.floor(user.diamonds))}`;
+            
+            updateReferralUI();
+        }
+
+        // ============================================
+        // 9. ЗАЩИЩЕННЫЕ ДЕЙСТВИЯ
+        // ============================================
+        function secureAction(action, callback, requireItem = null) {
+            // Проверка безопасности
+            if (!security) {
+                showNotification('⚠️ Система безопасности не активна', 'error');
+                return false;
+            }
+
+            const check = security.checkAction(action, state.user.id);
+            if (!check.allowed) {
+                showNotification(`⛔ ${check.reason}`, 'warning');
+                return false;
+            }
+
+            // Проверка предмета
+            if (requireItem && (state.inventory[requireItem] || 0) <= 0) {
+                const names = { food: 'еды', toy: 'игрушек', medicine: 'лекарств' };
+                showNotification(`❌ Нет ${names[requireItem] || requireItem}!`, 'error');
+                return false;
+            }
+
+            // Выполнение действия
+            try {
+                callback();
+                saveGame();
+                updateUI();
+                return true;
+            } catch (e) {
+                console.error('❌ Ошибка:', e);
+                showNotification('❌ Произошла ошибка', 'error');
+                return false;
+            }
+        }
+
+        // ============================================
+        // 10. ДЕЙСТВИЯ С ПИТОМЦЕМ
+        // ============================================
+        function feedPet() {
+            secureAction('feed', () => {
+                state.pet.hunger = clamp(state.pet.hunger + 25, 0, 100);
+                state.inventory.food--;
+                addExp(10);
+                showNotification('🍕 Питомец покормлен! +25 сытости', 'success');
+            }, 'food');
+        }
+
+        function playPet() {
+            secureAction('play', () => {
+                state.pet.mood = clamp(state.pet.mood + 20, 0, 100);
+                state.pet.energy = clamp(state.pet.energy - 10, 0, 100);
+                state.inventory.toy--;
+                addExp(15);
+                showNotification('🎮 Игра с питомцем! +20 настроения', 'success');
+            }, 'toy');
+        }
+
+        function healPet() {
+            secureAction('heal', () => {
+                state.pet.health = clamp(state.pet.health + 30, 0, 100);
+                state.inventory.medicine--;
+                addExp(12);
+                showNotification('💊 Питомец вылечен! +30 здоровья', 'success');
+            }, 'medicine');
+        }
+
+        function sleepPet() {
+            secureAction('sleep', () => {
+                state.pet.energy = clamp(state.pet.energy + 35, 0, 100);
+                state.pet.health = clamp(state.pet.health + 5, 0, 100);
+                addExp(8);
+                showNotification('😴 Питомец отдохнул! +35 энергии', 'success');
+            });
+        }
+
+        // ============================================
+        // 11. УРОВНИ
+        // ============================================
+        function addExp(amount) {
+            state.pet.exp += amount;
+            while (state.pet.exp >= state.pet.expToNext) {
+                state.pet.level++;
+                state.pet.exp -= state.pet.expToNext;
+                state.pet.expToNext = Math.floor(state.pet.expToNext * 1.5);
+
+                const bonusCoins = 50 + (state.pet.level - 1) * 10;
+                const bonusDiamonds = 5 + Math.floor((state.pet.level - 1) / 5);
+                state.user.coins += bonusCoins;
+                state.user.diamonds += bonusDiamonds;
+
+                showNotification(`🎉 Уровень ${state.pet.level}! +🪙${bonusCoins} +💎${bonusDiamonds}`, 'success');
+                saveGame();
+                updateUI();
+            }
+        }
+
+        // ============================================
+        // 12. МАГАЗИН
+        // ============================================
+        function buyItem(type) {
+            const prices = {
+                food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
+                toy: { coins: 15, diamonds: 0, name: 'Игрушка', emoji: '🧸' },
+                medicine: { coins: 20, diamonds: 0, name: 'Лекарство', emoji: '💊' },
+                skin: { coins: 0, diamonds: 5, name: 'Скин', emoji: '🎨' }
+            };
+
+            const price = prices[type];
+            if (!price) {
+                showNotification('❌ Неизвестный товар', 'error');
+                return;
+            }
+
+            const check = security.checkAction('buy', state.user.id);
+            if (!check.allowed) {
+                showNotification(`⛔ ${check.reason}`, 'warning');
+                return;
+            }
+
+            const coins = Math.floor(state.user.coins);
+            const diamonds = Math.floor(state.user.diamonds);
+
+            if (price.coins > 0 && coins < price.coins) {
+                showNotification(`❌ Нужно ${price.coins} монет, у вас ${coins}`, 'error');
+                return;
+            }
+            if (price.diamonds > 0 && diamonds < price.diamonds) {
+                showNotification(`❌ Нужно ${price.diamonds} алмазов, у вас ${diamonds}`, 'error');
+                return;
+            }
+
+            state.user.coins = Math.max(0, coins - price.coins);
+            state.user.diamonds = Math.max(0, diamonds - price.diamonds);
+
+            if (type === 'skin') {
+                changePetSkin();
+            } else {
+                state.inventory[type] = (state.inventory[type] || 0) + 1;
+            }
+
+            showNotification(`✅ Куплено: ${price.emoji} ${price.name}!`, 'success');
+            saveGame();
+            updateUI();
+        }
+
+        function changePetSkin() {
+            const skins = ['🐣', '🐥', '🐔', '🦆', '🐦', '🐧', '🐤', '🦅', '🦉', '🦜'];
+            const idx = skins.indexOf(state.pet.emoji);
+            state.pet.emoji = skins[(idx + 1) % skins.length];
+            if (!state.inventory.skins.includes(state.pet.emoji)) {
+                state.inventory.skins.push(state.pet.emoji);
+            }
+            showNotification('🎨 Скин изменен!', 'success');
+        }
+
+        // ============================================
+        // 13. РЕФЕРАЛЫ
+        // ============================================
+        function generateReferralLink() {
+            const userId = state.user.id;
+            const botUsername = 'nnvtamagochi_bot';
+            const link = `https://t.me/${botUsername}?start=ref_${userId}`;
+            if (el.refLink) el.refLink.textContent = link;
+            return link;
+        }
+
+        function copyReferralLink() {
+            const link = el.refLink?.textContent || generateReferralLink();
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(link).then(() => {
+                    showNotification('📋 Ссылка скопирована!', 'success');
+                });
+            } else {
+                const input = document.createElement('input');
+                input.value = link;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showNotification('📋 Ссылка скопирована!', 'success');
+            }
+        }
+
+        function shareReferral() {
+            const link = el.refLink?.textContent || generateReferralLink();
+
+            if (tg?.showPopup) {
+                tg.showPopup({
+                    title: '👥 Пригласить друга',
+                    message: `Пригласи друга и получи бонус!\n\n🪙 +50 монет\n💎 +5 алмазов\n⭐ +20 опыта\n\n📋 Ссылка: ${link}`,
+                    buttons: [
+                        { id: 'copy', type: 'default', text: '📋 Копировать' },
+                        { type: 'cancel' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'copy') copyReferralLink();
+                });
+            } else {
+                copyReferralLink();
+            }
+        }
+
+        function updateReferralUI() {
+            if (el.refCount) el.refCount.textContent = state.user.referrals || 0;
+            if (el.refEarned) el.refEarned.textContent = state.user.referralEarned || 0;
+
+            if (el.referralListContainer) {
+                const list = state.user.referralList || [];
+                if (list.length === 0) {
+                    el.referralListContainer.innerHTML = '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>';
+                } else {
+                    el.referralListContainer.innerHTML = list.map((ref, i) =>
+                        `<div class="referral-item">
+                            <span>${i + 1}.</span>
+                            <span>${ref.substring(0, 10)}...</span>
+                            <span>✅</span>
+                        </div>`
+                    ).join('');
+                }
+            }
+        }
+
+        function applyReferral(refId) {
+            if (!refId || refId === state.user.id) return;
+            if (state.user.referralList?.includes(refId)) {
+                showNotification('❌ Этот пользователь уже приглашен', 'warning');
+                return;
+            }
+
+            state.user.referrals = (state.user.referrals || 0) + 1;
+            state.user.referralEarned = (state.user.referralEarned || 0) + 50;
+            state.user.coins = Math.floor(state.user.coins) + 50;
+            state.user.diamonds = Math.floor(state.user.diamonds) + 5;
+
+            if (!state.user.referralList) state.user.referralList = [];
+            state.user.referralList.push(refId);
+
+            showNotification('🎉 Реферал добавлен! +50 монет, +5 алмазов!', 'success');
+            saveGame();
+            updateUI();
+        }
+
+        // ============================================
+        // 14. РЕЙТИНГ
+        // ============================================
+        async function updateRating() {
+            const { pet, user } = state;
+            user.rating = Math.floor(
+                (pet.health + pet.energy + pet.mood + pet.hunger) * 0.1 +
+                pet.level * 10 +
+                user.coins * 0.01 +
+                user.referrals * 50
+            );
+            await updateRatingList();
+        }
+
+        async function updateRatingList() {
+            const ratingList = document.getElementById('ratingList');
+            if (!ratingList) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('players')
+                    .select('user_name, rating, level, coins')
+                    .order('rating', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const items = data.map((player, i) => {
+                        const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                        const cls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+                        return `<div class="rating-item ${cls}">
+                            <span><span class="medal">${medal}</span> ${player.user_name || 'Гость'}</span>
+                            <span class="score">${player.rating || 0} ⭐</span>
+                        </div>`;
+                    });
+                    
+                    // Добавляем текущего игрока
+                    const currentInList = data.some(p => p.user_name === state.user.name);
+                    if (!currentInList) {
+                        items.push(`<div class="rating-item" style="border-color: var(--button-bg);">
+                            <span>👤 ${state.user.name} (Вы)</span>
+                            <span class="score">${state.user.rating} ⭐</span>
+                        </div>`);
+                    }
+                    
+                    ratingList.innerHTML = items.join('');
+                } else {
+                    ratingList.innerHTML = `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
+                }
+            } catch (e) {
+                console.warn('⚠️ Ошибка рейтинга:', e);
+                ratingList.innerHTML = `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
+            }
+        }
+
+        // ============================================
+        // 15. ИГРОВОЙ ЦИКЛ
+        // ============================================
+        let gameLoopInterval = null;
+
+        function startGameLoop() {
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+            console.log('🔄 Игровой цикл запущен');
+
+            function updateStats() {
+                state.pet.hunger = clamp(state.pet.hunger - 2, 0, 100);
+                state.pet.energy = clamp(state.pet.energy - 1.5, 0, 100);
+                state.pet.mood = clamp(state.pet.mood - 1, 0, 100);
+                state.pet.health = clamp(state.pet.health - 0.5, 0, 100);
+
+                if (state.pet.health <= 0) {
+                    showNotification('💀 Питомец умер! Восстановление...', 'error');
+                    state.pet.health = 50;
+                    state.pet.energy = 50;
+                    state.pet.mood = 50;
+                    state.pet.hunger = 50;
+                    state.user.coins = Math.max(0, state.user.coins - 20);
+                }
+
+                if (Math.random() < 0.05) {
+                    state.user.coins += randomInt(1, 3);
+                }
+
+                state.user.totalPlayTime += 5;
+                saveGame();
+                updateUI();
+            }
+
+            setTimeout(updateStats, 1000);
+            gameLoopInterval = setInterval(updateStats, CONFIG.GAME_LOOP_INTERVAL);
+        }
+
+        // ============================================
+        // 16. ЕЖЕДНЕВНЫЙ БОНУС
+        // ============================================
+        function checkDailyBonus() {
+            const now = Date.now();
+            const lastLogin = state.user.lastLogin || 0;
+            const dayMs = 86400000;
+
+            if (now - lastLogin > dayMs) {
+                const streak = (now - lastLogin < dayMs * 2) ? (state.user.loginStreak || 0) + 1 : 1;
+                state.user.loginStreak = streak;
+
+                const bonusCoins = 50 + streak * 10;
+                const bonusDiamonds = 5 + Math.floor(streak / 3);
+
+                state.user.coins += bonusCoins;
+                state.user.diamonds += bonusDiamonds;
+                state.user.lastLogin = now;
+
+                showNotification(`🎁 Ежедневный бонус!\n🪙 +${bonusCoins} монет\n💎 +${bonusDiamonds} алмазов\n🔥 ${streak} день подряд!`, 'success');
+                saveGame();
+                updateUI();
+            }
+        }
+
+        // ============================================
+        // 17. УВЕДОМЛЕНИЯ
+        // ============================================
+        function showNotification(message, type = 'info') {
+            console.log('📢', message);
+
+            if (tg?.showPopup) {
+                tg.showPopup({
+                    title: '🐾 Тамагочи',
+                    message: message,
+                    buttons: [{ type: 'ok' }]
+                });
+                return;
+            }
+
+            const container = document.getElementById('notificationContainer');
+            if (!container) return;
+
+            const types = {
+                success: { icon: '✅', border: '#4CAF50' },
+                error: { icon: '❌', border: '#f44336' },
+                warning: { icon: '⚠️', border: '#FFA726' },
+                info: { icon: '📢', border: '#42A5F5' }
+            };
+
+            const t = types[type] || types.info;
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.borderLeft = `4px solid ${t.border}`;
+            notification.innerHTML = `
+                <span class="icon">${t.icon}</span>
+                <span class="text">${message}</span>
+                <span class="close" onclick="this.parentElement.remove()">×</span>
+            `;
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    notification.style.transition = 'opacity 0.3s';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // ============================================
+        // 18. СОХРАНЕНИЕ
+        // ============================================
+        async function saveGame() {
+            try {
+                localStorage.setItem('tamagochi_save', JSON.stringify(state));
+                if (dbConnected) await saveToSupabase();
+                return true;
+            } catch (e) {
+                console.error('❌ Ошибка сохранения:', e);
+                return false;
+            }
+        }
+
+        async function loadGame() {
+            await checkConnection();
+            
+            // Пытаемся загрузить из Supabase
+            const loaded = await loadFromSupabase();
+            
+            if (!loaded) {
+                try {
+                    const local = localStorage.getItem('tamagochi_save');
+                    if (local) {
+                        const data = JSON.parse(local);
+                        if (security.validateData(data)) {
+                            Object.assign(state, data);
+                            console.log('📂 Загружено из локального кэша');
+                        }
+                    }
+                } catch (e) {
+                    console.error('❌ Ошибка локальной загрузки:', e);
+                }
+            }
+            
+            if (dbConnected && loaded) {
+                await saveToSupabase();
+            }
+            
+            console.log('✅ Данные загружены');
+        }
+
+        // ============================================
+        // 19. НАВИГАЦИЯ
+        // ============================================
+        function setupNavigation() {
+            const buttons = document.querySelectorAll('.nav-btn');
+            const sections = document.querySelectorAll('section');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sectionId = btn.dataset.section;
+                    buttons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    sections.forEach(s => s.classList.remove('active'));
+                    const target = document.getElementById(sectionId);
+                    if (target) target.classList.add('active');
+                    if (sectionId === 'ratingSection') updateRating();
+                });
+            });
+        }
+
+        // ============================================
+        // 20. НАСТРОЙКА КНОПОК
+        // ============================================
+        function setupButtons() {
+            const feedBtn = document.getElementById('feedBtn');
+            const playBtn = document.getElementById('playBtn');
+            const healBtn = document.getElementById('healBtn');
+            const sleepBtn = document.getElementById('sleepBtn');
+
+            if (feedBtn) feedBtn.addEventListener('click', (e) => { e.preventDefault(); feedPet(); });
+            if (playBtn) playBtn.addEventListener('click', (e) => { e.preventDefault(); playPet(); });
+            if (healBtn) healBtn.addEventListener('click', (e) => { e.preventDefault(); healPet(); });
+            if (sleepBtn) sleepBtn.addEventListener('click', (e) => { e.preventDefault(); sleepPet(); });
+
+            document.querySelectorAll('.item').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const type = el.dataset.item;
+                    if (type) buyItem(type);
+                });
+            });
+
+            console.log('✅ Кнопки настроены');
+        }
+
+        // ============================================
+        // 21. ТЕМА TELEGRAM
+        // ============================================
+        function setupTelegramTheme() {
+            if (!tg?.themeParams) return;
+            const theme = tg.themeParams;
+            const root = document.documentElement;
+            root.style.setProperty('--bg-primary', theme.bg_color || '#ffffff');
+            root.style.setProperty('--bg-secondary', theme.secondary_bg_color || '#f0f0f0');
+            root.style.setProperty('--text-primary', theme.text_color || '#000000');
+            root.style.setProperty('--text-secondary', theme.hint_color || '#333333');
+            root.style.setProperty('--button-bg', theme.button_color || '#0088cc');
+            root.style.setProperty('--button-text', theme.button_text_color || '#ffffff');
+            root.style.setProperty('--border-color', theme.hint_color || '#e0e0e0');
+        }
+
+        // ============================================
+        // 22. АВТОСОХРАНЕНИЕ
+        // ============================================
+        let autoSaveInterval = null;
+
+        function startAutoSave() {
+            if (autoSaveInterval) clearInterval(autoSaveInterval);
+            autoSaveInterval = setInterval(() => {
+                saveGame();
+                console.log('💾 Автосохранение...');
+            }, CONFIG.AUTO_SAVE_INTERVAL);
+        }
+
+        // ============================================
+        // 23. ИНИЦИАЛИЗАЦИЯ
+        // ============================================
+        async function init() {
+            console.log('🚀 Инициализация с защитой...');
+
+            // Создаем модуль безопасности
+            security = new SecurityModule();
+            window.security = security;
+
+            // Проверяем подключение
+            await checkConnection();
+
+            // Загружаем данные
+            await loadGame();
+
+            // Обновляем UI
+            updateUI();
+
+            // Настройки
+            setupNavigation();
+            setupButtons();
+            generateReferralLink();
+            setupTelegramTheme();
+
+            // Запускаем
+            startGameLoop();
+            checkDailyBonus();
+            await updateRating();
+            startAutoSave();
+
+            // Обработка реферальной ссылки
+            const startParam = tg?.initDataUnsafe?.start_param;
+            if (startParam && startParam.startsWith('ref_')) {
+                const refId = startParam.replace('ref_', '');
+                setTimeout(() => applyReferral(refId), 1000);
+            }
+
+            console.log('✅ Игра запущена!');
+            console.log('🛡️ Статус защиты:', security.getStatus());
+            console.log('📊 Прогресс:', {
+                уровень: state.pet.level,
+                монет: state.user.coins,
+                здоровье: Math.round(state.pet.health)
+            });
+            console.log('☁️ Supabase:', dbConnected ? '✅ Подключен' : '⚠️ Офлайн');
+        }
+
+        // ============================================
+        // 24. ГЛОБАЛЬНЫЙ ДОСТУП
+        // ============================================
+        window.feedPet = feedPet;
+        window.playPet = playPet;
+        window.healPet = healPet;
+        window.sleepPet = sleepPet;
+        window.buyItem = buyItem;
+        window.shareReferral = shareReferral;
+        window.copyReferralLink = copyReferralLink;
+        window.updateUI = updateUI;
+        window.state = state;
+        window.security = security;
+        window.showNotification = showNotification;
+
+        window.addEventListener('beforeunload', function() {
+            saveGame();
+            console.log('💾 Сохранено перед закрытием');
+        });
+
+        // ============================================
+        // 25. ЗАПУСК
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM загружен');
+            init();
+        });
+
+        console.log('📦 Приложение загружено (Защищенная версия)');
+    </script>
+</body>
+</html>
