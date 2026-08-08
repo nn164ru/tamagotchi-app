@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
     <style>
-        /* ===== СТИЛИ (ТЕ ЖЕ) ===== */
+        /* ===== СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
@@ -154,7 +154,7 @@
         
         .progress-bar div {
             height: 100%;
-            transition: width 0.5s ease;
+            transition: width 0.3s ease;
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -465,16 +465,12 @@
         const SUPABASE_KEY = 'sb_publishable_mA2pfIxBGZVIP68OQmj1pg_oKRo3KDL';
         
         // ============================================
-        // 🛡️ УМНАЯ СИСТЕМА ЗАЩИТЫ (БЕЗ ЛОЖНЫХ СРАБАТЫВАНИЙ)
+        // 🛡️ СИСТЕМА ЗАЩИТЫ
         // ============================================
         class SmartSecurity {
             constructor() {
                 this.actionLog = [];
-                this.cheatFlags = {
-                    speedHack: false,
-                    memoryHack: false,
-                    debuggerDetected: false
-                };
+                this.cheatFlags = { speedHack: false, memoryHack: false, debuggerDetected: false };
                 this.lastActionTime = {};
                 this.detectionCount = 0;
                 this.isLocked = false;
@@ -486,7 +482,7 @@
                 this.protectConsole();
                 this.protectEval();
                 this.setupFingerprint();
-                console.log('🛡️ Умная защита активирована');
+                console.log('🛡️ Защита активирована');
             }
 
             protectConsole() {
@@ -526,9 +522,6 @@
                 if (!stored) {
                     localStorage.setItem('device_fingerprint', hash);
                     this._fingerprint = hash;
-                } else if (stored !== hash) {
-                    // Не блокируем сразу, только логируем
-                    console.warn('⚠️ Изменение устройства');
                 } else {
                     this._fingerprint = stored;
                 }
@@ -544,22 +537,18 @@
                 return hash.toString(36);
             }
 
-            // Проверка действия (улучшенная)
             checkAction(action, userId) {
                 const now = Date.now();
                 const key = `${userId}_${action}`;
                 const lastTime = this.lastActionTime[key] || 0;
 
-                // Кулдаун - 1 секунда (было 2)
                 if (now - lastTime < 1000) {
                     return { allowed: false, reason: 'Подождите 1 секунду', cooldown: true };
                 }
 
-                // Логирование
                 this.actionLog.push({ action, userId, time: now });
                 if (this.actionLog.length > 50) this.actionLog.shift();
 
-                // Проверка скорости - только для подозрительных случаев
                 const recentActions = this.actionLog.filter(a => now - a.time < 10000);
                 if (recentActions.length > 20) {
                     this.warningCount++;
@@ -575,26 +564,19 @@
                 return { allowed: true };
             }
 
-            // Проверка данных (улучшенная)
             validateData(data) {
                 if (!data || !data.user || !data.pet) return false;
-
-                // Реалистичные ограничения
                 if (data.user.coins > 99999999 || data.user.coins < -100) return false;
                 if (data.user.diamonds > 9999999 || data.user.diamonds < -10) return false;
                 if (data.pet.level > 10000 || data.pet.level < 0) return false;
-                
                 if (isNaN(data.user.coins) || isNaN(data.user.diamonds)) return false;
                 if (isNaN(data.pet.health) || isNaN(data.pet.energy)) return false;
-
                 return true;
             }
 
-            // Только для реальных угроз
             triggerSecurity(type) {
                 this.detectionCount++;
                 console.warn('⚠️ Угроза:', type);
-                
                 if (type === 'memory_hack' || type === 'speed_hack') {
                     this.isLocked = true;
                     showSecurityOverlay('Обнаружена подозрительная активность');
@@ -631,7 +613,6 @@
                 security.isLocked = false;
                 security.detectionCount = 0;
                 security.warningCount = 0;
-                // Разблокируем кнопки
                 document.querySelectorAll('button, .item').forEach(el => {
                     el.disabled = false;
                     el.style.opacity = '1';
@@ -675,7 +656,7 @@
         }
 
         // ============================================
-        // 3. СОСТОЯНИЕ
+        // 3. СОСТОЯНИЕ (С ЦЕЛЫМИ ЧИСЛАМИ)
         // ============================================
         let state = {
             pet: {
@@ -728,19 +709,20 @@
                 }
 
                 if (data) {
-                    state.pet.health = data.health || 100;
-                    state.pet.energy = data.energy || 100;
-                    state.pet.mood = data.mood || 100;
-                    state.pet.hunger = data.hunger || 100;
-                    state.pet.level = data.level || 1;
-                    state.pet.exp = data.exp || 0;
+                    // ⭐ ОКРУГЛЯЕМ ВСЕ ЗНАЧЕНИЯ ⭐
+                    state.pet.health = Math.round(data.health || 100);
+                    state.pet.energy = Math.round(data.energy || 100);
+                    state.pet.mood = Math.round(data.mood || 100);
+                    state.pet.hunger = Math.round(data.hunger || 100);
+                    state.pet.level = Math.round(data.level || 1);
+                    state.pet.exp = Math.round(data.exp || 0);
                     state.pet.emoji = data.pet_emoji || '🐣';
                     state.pet.name = data.pet_name || 'Питомец';
-                    state.user.coins = data.coins || 0;
-                    state.user.diamonds = data.diamonds || 0;
-                    state.user.rating = data.rating || 0;
-                    state.user.referrals = data.referrals || 0;
-                    state.user.referralEarned = data.referral_earned || 0;
+                    state.user.coins = Math.round(data.coins || 0);
+                    state.user.diamonds = Math.round(data.diamonds || 0);
+                    state.user.rating = Math.round(data.rating || 0);
+                    state.user.referrals = Math.round(data.referrals || 0);
+                    state.user.referralEarned = Math.round(data.referral_earned || 0);
                     state.user.referralList = data.referral_list || [];
                     state.inventory = data.inventory || { food: 2, toy: 1, medicine: 1, skins: ['🐣'] };
                     return true;
@@ -754,6 +736,7 @@
 
         async function saveToSupabase() {
             try {
+                // ⭐ ОКРУГЛЯЕМ ПЕРЕД СОХРАНЕНИЕМ ⭐
                 const saveData = {
                     user_id: state.user.id,
                     user_name: state.user.name,
@@ -763,16 +746,16 @@
                     energy: Math.round(state.pet.energy),
                     mood: Math.round(state.pet.mood),
                     hunger: Math.round(state.pet.hunger),
-                    level: state.pet.level,
+                    level: Math.round(state.pet.level),
                     exp: Math.round(state.pet.exp),
                     coins: Math.round(state.user.coins),
                     diamonds: Math.round(state.user.diamonds),
                     rating: Math.round(state.user.rating),
-                    referrals: state.user.referrals || 0,
-                    referral_earned: state.user.referralEarned || 0,
+                    referrals: Math.round(state.user.referrals || 0),
+                    referral_earned: Math.round(state.user.referralEarned || 0),
                     referral_list: state.user.referralList || [],
-                    total_play_time: state.user.totalPlayTime || 0,
-                    login_streak: state.user.loginStreak || 1,
+                    total_play_time: Math.round(state.user.totalPlayTime || 0),
+                    login_streak: Math.round(state.user.loginStreak || 1),
                     last_login: state.user.lastLogin || Date.now(),
                     inventory: state.inventory,
                     updated_at: new Date().toISOString()
@@ -793,8 +776,14 @@
         // ============================================
         // 5. ВСПОМОГАТЕЛЬНЫЕ
         // ============================================
-        function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
-        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function clamp(val, min, max) { 
+            return Math.round(Math.max(min, Math.min(max, val))); 
+        }
+        
+        function randomInt(min, max) { 
+            return Math.floor(Math.random() * (max - min + 1)) + min; 
+        }
+        
         function formatNumber(num) {
             if (num === undefined || num === null || isNaN(num)) return '0';
             num = Math.floor(num);
@@ -835,52 +824,68 @@
         }
 
         // ============================================
-        // 8. UI
+        // 8. ⭐ ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ) ⭐
         // ============================================
         function updateUI() {
             const pet = state.pet;
             const user = state.user;
 
+            // Имя и уровень
             if (el.userName) el.userName.textContent = user.name || 'Гость';
             if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
+            
+            // Питомец
             if (el.petEmoji) el.petEmoji.textContent = pet.emoji;
             if (el.petName) el.petName.textContent = pet.name;
             if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
+            // ⭐ БАРЫ ХАРАКТЕРИСТИК (С ОКРУГЛЕНИЕМ) ⭐
             const bars = [
-                { id: 'healthBar', valId: 'healthVal', value: pet.health },
-                { id: 'energyBar', valId: 'energyVal', value: pet.energy },
-                { id: 'moodBar', valId: 'moodVal', value: pet.mood },
-                { id: 'hungerBar', valId: 'hungerVal', value: pet.hunger }
+                { id: 'healthBar', valId: 'healthVal', value: pet.health, name: 'Здоровье' },
+                { id: 'energyBar', valId: 'energyVal', value: pet.energy, name: 'Энергия' },
+                { id: 'moodBar', valId: 'moodVal', value: pet.mood, name: 'Настроение' },
+                { id: 'hungerBar', valId: 'hungerVal', value: pet.hunger, name: 'Сытость' }
             ];
 
             bars.forEach(bar => {
                 const elBar = document.getElementById(bar.id);
                 const elVal = document.getElementById(bar.valId);
+                
                 if (elBar) {
+                    // ⭐ ОКРУГЛЯЕМ ДО ЦЕЛОГО ЧИСЛА ⭐
                     const v = Math.round(clamp(bar.value, 0, 100));
+                    
+                    // Обновляем ширину
                     elBar.style.width = v + '%';
                     elBar.textContent = v + '%';
+                    
+                    // Обновляем текстовое значение
                     if (elVal) elVal.textContent = v;
-                    elBar.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
+                    
+                    // Обновляем цвет
+                    if (v > 70) {
+                        elBar.style.background = '#4CAF50';
+                    } else if (v > 40) {
+                        elBar.style.background = '#FFA726';
+                    } else {
+                        elBar.style.background = '#f44336';
+                    }
                 }
             });
 
+            // Валюта
             if (el.coins) el.coins.textContent = `🪙 ${formatNumber(Math.floor(user.coins))}`;
             if (el.diamonds) el.diamonds.textContent = `💎 ${formatNumber(Math.floor(user.diamonds))}`;
+            
+            // Рефералы
             updateReferralUI();
         }
 
         // ============================================
-        // 9. ДЕЙСТВИЯ (С УМНОЙ ЗАЩИТОЙ)
+        // 9. ДЕЙСТВИЯ
         // ============================================
         function secureAction(action, callback, requireItem = null) {
-            if (!security) {
-                showNotification('⚠️ Система безопасности не активна', 'warning');
-                return false;
-            }
-
-            if (security.isLocked) {
+            if (!security || security.isLocked) {
                 showNotification('⛔ Доступ заблокирован', 'error');
                 return false;
             }
@@ -987,7 +992,7 @@
                 return;
             }
 
-            if (security.isLocked) {
+            if (security && security.isLocked) {
                 showNotification('⛔ Доступ заблокирован', 'error');
                 return;
             }
@@ -1150,10 +1155,12 @@
         function startGameLoop() {
             if (gameLoopInterval) clearInterval(gameLoopInterval);
             function updateStats() {
+                // ⭐ УМЕНЬШАЕМ И ОКРУГЛЯЕМ ⭐
                 state.pet.hunger = clamp(state.pet.hunger - 2, 0, 100);
                 state.pet.energy = clamp(state.pet.energy - 1.5, 0, 100);
                 state.pet.mood = clamp(state.pet.mood - 1, 0, 100);
                 state.pet.health = clamp(state.pet.health - 0.5, 0, 100);
+                
                 if (state.pet.health <= 0) {
                     showNotification('💀 Питомец умер! Восстановление...', 'error');
                     state.pet.health = 50;
@@ -1314,7 +1321,6 @@
         async function init() {
             console.log('🚀 Инициализация...');
             
-            // Создаем защиту
             security = new SmartSecurity();
             window.security = security;
             
@@ -1329,14 +1335,18 @@
             checkDailyBonus();
             await updateRating();
 
-            // Реферальная ссылка
             const startParam = tg?.initDataUnsafe?.start_param;
             if (startParam && startParam.startsWith('ref_')) {
                 setTimeout(() => applyReferral(startParam.replace('ref_', '')), 1000);
             }
 
             console.log('✅ Игра запущена!');
-            console.log('🛡️ Статус защиты:', security.getStatus());
+            console.log('📊 Характеристики:', {
+                здоровье: state.pet.health,
+                энергия: state.pet.energy,
+                настроение: state.pet.mood,
+                сытость: state.pet.hunger
+            });
         }
 
         // ============================================
