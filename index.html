@@ -8,15 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
     <style>
-        /* ============================================
-           СТИЛИ
-           ============================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* ===== СТИЛИ ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         :root {
             --bg-primary: #ffffff;
             --bg-secondary: #f0f0f0;
@@ -65,9 +59,6 @@
             position: relative;
         }
 
-        /* ============================================
-           ЗАЩИТНЫЙ ОВЕРЛЕЙ
-           ============================================ */
         #securityOverlay {
             display: none;
             position: fixed;
@@ -101,9 +92,6 @@
         }
         #securityOverlay .btn:active { transform: scale(0.95); }
 
-        /* ============================================
-           HEADER
-           ============================================ */
         #header {
             background: var(--bg-secondary);
             padding: 15px 20px;
@@ -134,10 +122,13 @@
         }
         .status-dot.online { background: var(--success); }
         .status-dot.offline { background: var(--danger); }
+        .status-dot.syncing { background: var(--warning); animation: pulse 1s infinite; }
 
-        /* ============================================
-           MAIN CONTENT
-           ============================================ */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
         #mainContent {
             flex: 1;
             overflow-y: auto;
@@ -157,33 +148,12 @@
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* ============================================
-           ПИТОМЕЦ
-           ============================================ */
-        .pet-container {
-            text-align: center;
-            padding: 20px 0;
-        }
-        #petEmoji {
-            font-size: 100px;
-            line-height: 1.2;
-            transition: transform 0.3s;
-            user-select: none;
-        }
+        .pet-container { text-align: center; padding: 20px 0; }
+        #petEmoji { font-size: 100px; line-height: 1.2; transition: transform 0.3s; user-select: none; }
         #petEmoji:hover { transform: scale(1.1); }
-        #petName {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0 5px;
-        }
-        #petStatus {
-            font-size: 16px;
-            color: var(--text-secondary);
-        }
+        #petName { font-size: 24px; font-weight: bold; margin: 10px 0 5px; }
+        #petStatus { font-size: 16px; color: var(--text-secondary); }
 
-        /* ============================================
-           СТАТИСТИКА
-           ============================================ */
         .stats { margin: 20px 0; }
         .stat { margin-bottom: 15px; }
         .stat span {
@@ -225,9 +195,6 @@
         #moodBar { background: linear-gradient(90deg, #42A5F5, #1565C0); }
         #hungerBar { background: linear-gradient(90deg, #EF5350, #C62828); }
 
-        /* ============================================
-           ДЕЙСТВИЯ
-           ============================================ */
         .actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -250,9 +217,6 @@
         .actions button:active { transform: scale(0.95); opacity: 0.8; }
         .actions button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* ============================================
-           МАГАЗИН
-           ============================================ */
         .shop-items {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -275,29 +239,40 @@
         }
         .item:active { transform: scale(0.95); }
         .item span:first-child { font-size: 18px; }
-        .item span:last-child {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
+        .item span:last-child { font-size: 14px; color: var(--text-secondary); }
 
-        /* ============================================
-           РЕЙТИНГ
-           ============================================ */
         .rating-item {
-            padding: 12px;
+            padding: 12px 15px;
             margin-bottom: 8px;
             background: var(--bg-secondary);
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             font-size: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: all 0.3s ease;
         }
+        .rating-item:hover { transform: translateX(5px); box-shadow: 0 2px 8px var(--shadow); }
+        .rating-item .medal { font-size: 18px; margin-right: 8px; }
+        .rating-item .score { font-weight: bold; color: var(--button-bg); font-size: 16px; }
+        .rating-item .level-badge {
+            background: var(--bg-primary);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+        .rating-item.current-player {
+            border: 2px solid var(--button-bg);
+            background: var(--bg-secondary);
+            box-shadow: 0 0 20px rgba(0, 136, 204, 0.1);
+        }
+        .rating-item.top1 { background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), var(--bg-secondary)); border-color: gold; }
+        .rating-item.top2 { background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), var(--bg-secondary)); border-color: silver; }
+        .rating-item.top3 { background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), var(--bg-secondary)); border-color: #cd7f32; }
 
-        /* ============================================
-           РЕФЕРАЛЫ
-           ============================================ */
         .referral-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -312,17 +287,8 @@
             text-align: center;
             border: 1px solid var(--border-color);
         }
-        .stat-label {
-            display: block;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-        .stat-value {
-            display: block;
-            font-size: 24px;
-            font-weight: bold;
-        }
+        .stat-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+        .stat-value { display: block; font-size: 24px; font-weight: bold; }
 
         .referral-link-box {
             background: var(--bg-secondary);
@@ -331,16 +297,8 @@
             margin: 15px 0;
             border: 1px solid var(--border-color);
         }
-        .link-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .link-container span {
-            flex: 1;
-            word-break: break-all;
-            font-size: 12px;
-        }
+        .link-container { display: flex; gap: 10px; align-items: center; }
+        .link-container span { flex: 1; word-break: break-all; font-size: 12px; }
 
         .copy-btn, .share-btn {
             padding: 10px 15px;
@@ -372,9 +330,6 @@
         }
         #referralListContainer { margin-top: 15px; }
 
-        /* ============================================
-           НАВИГАЦИЯ
-           ============================================ */
         #bottomNav {
             position: fixed;
             bottom: 0;
@@ -402,9 +357,6 @@
         .nav-btn.active { opacity: 1; transform: scale(1.1); }
         .nav-btn:active { transform: scale(0.9); }
 
-        /* ============================================
-           УВЕДОМЛЕНИЯ
-           ============================================ */
         #notificationContainer {
             position: fixed;
             top: 20px;
@@ -431,17 +383,9 @@
         }
         .notification .icon { font-size: 20px; }
         .notification .text { flex: 1; }
-        .notification .close {
-            cursor: pointer;
-            opacity: 0.5;
-            font-size: 18px;
-            transition: opacity 0.2s;
-        }
+        .notification .close { cursor: pointer; opacity: 0.5; font-size: 18px; transition: opacity 0.2s; }
         .notification .close:hover { opacity: 1; }
 
-        /* ============================================
-           АДАПТИВ
-           ============================================ */
         @media (max-width: 480px) {
             #header { padding: 12px 15px; }
             #mainContent { padding: 15px; padding-bottom: 75px; }
@@ -462,9 +406,7 @@
     </style>
 </head>
 <body>
-    <!-- ============================================
-    ЗАЩИТНЫЙ ОВЕРЛЕЙ
-    ============================================ -->
+    <!-- ЗАЩИТНЫЙ ОВЕРЛЕЙ -->
     <div id="securityOverlay">
         <div class="icon">🛡️</div>
         <div class="title">Доступ заблокирован</div>
@@ -472,16 +414,11 @@
         <button class="btn" onclick="unlockGame()">🔓 Разблокировать</button>
     </div>
 
-    <!-- ============================================
-    УВЕДОМЛЕНИЯ
-    ============================================ -->
+    <!-- УВЕДОМЛЕНИЯ -->
     <div id="notificationContainer"></div>
 
-    <!-- ============================================
-    ПРИЛОЖЕНИЕ
-    ============================================ -->
+    <!-- ПРИЛОЖЕНИЕ -->
     <div id="app">
-        <!-- HEADER -->
         <header id="header">
             <div class="user-info">
                 <span id="userName">Загрузка...</span>
@@ -494,7 +431,6 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT -->
         <main id="mainContent">
             <!-- PET -->
             <section id="petSection" class="active">
@@ -506,27 +442,19 @@
                 <div class="stats">
                     <div class="stat">
                         <span>❤️ Здоровье</span>
-                        <div class="progress-bar">
-                            <div id="healthBar" style="width: 100%">100%</div>
-                        </div>
+                        <div class="progress-bar"><div id="healthBar" style="width: 100%">100%</div></div>
                     </div>
                     <div class="stat">
                         <span>⚡ Энергия</span>
-                        <div class="progress-bar">
-                            <div id="energyBar" style="width: 100%">100%</div>
-                        </div>
+                        <div class="progress-bar"><div id="energyBar" style="width: 100%">100%</div></div>
                     </div>
                     <div class="stat">
                         <span>😊 Настроение</span>
-                        <div class="progress-bar">
-                            <div id="moodBar" style="width: 100%">100%</div>
-                        </div>
+                        <div class="progress-bar"><div id="moodBar" style="width: 100%">100%</div></div>
                     </div>
                     <div class="stat">
                         <span>🍔 Сытость</span>
-                        <div class="progress-bar">
-                            <div id="hungerBar" style="width: 100%">100%</div>
-                        </div>
+                        <div class="progress-bar"><div id="hungerBar" style="width: 100%">100%</div></div>
                     </div>
                 </div>
                 <div class="actions">
@@ -541,30 +469,33 @@
             <section id="shopSection">
                 <h2>🛒 Магазин</h2>
                 <div class="shop-items">
-                    <div class="item" data-item="food">
-                        <span>🍕 Еда</span>
-                        <span>🪙 10</span>
-                    </div>
-                    <div class="item" data-item="toy">
-                        <span>🧸 Игрушка</span>
-                        <span>🪙 15</span>
-                    </div>
-                    <div class="item" data-item="medicine">
-                        <span>💊 Лекарство</span>
-                        <span>🪙 20</span>
-                    </div>
-                    <div class="item" data-item="skin">
-                        <span>🎨 Скин</span>
-                        <span>💎 5</span>
-                    </div>
+                    <div class="item" data-item="food"><span>🍕 Еда</span><span>🪙 10</span></div>
+                    <div class="item" data-item="toy"><span>🧸 Игрушка</span><span>🪙 15</span></div>
+                    <div class="item" data-item="medicine"><span>💊 Лекарство</span><span>🪙 20</span></div>
+                    <div class="item" data-item="skin"><span>🎨 Скин</span><span>💎 5</span></div>
                 </div>
             </section>
 
             <!-- RATING -->
             <section id="ratingSection">
-                <h2>🏆 Рейтинг</h2>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>🏆 Рейтинг</span>
+                    <button onclick="refreshRating()" style="
+                        background: none;
+                        border: none;
+                        font-size: 20px;
+                        cursor: pointer;
+                        padding: 5px 10px;
+                        border-radius: 50%;
+                        transition: transform 0.3s;
+                        color: var(--text-primary);
+                    ">🔄</button>
+                </h2>
                 <div id="ratingList">
-                    <div class="rating-item">Загрузка...</div>
+                    <div class="rating-loading" style="text-align:center; padding:20px; color:var(--text-secondary);">
+                        <div style="display:inline-block; width:30px; height:30px; border:3px solid var(--bg-secondary); border-top:3px solid var(--button-bg); border-radius:50%; animation: spin 0.8s linear infinite; margin-bottom:10px;"></div>
+                        <div>Загрузка рейтинга...</div>
+                    </div>
                 </div>
             </section>
 
@@ -581,7 +512,6 @@
                         <span class="stat-value" id="refEarned">0</span>
                     </div>
                 </div>
-
                 <div class="referral-link-box">
                     <p>📋 Ваша ссылка:</p>
                     <div class="link-container">
@@ -589,16 +519,13 @@
                         <button onclick="copyReferralLink()" class="copy-btn">📋 Копировать</button>
                     </div>
                 </div>
-
                 <button onclick="shareReferral()" class="share-btn">📤 Пригласить друга</button>
-
                 <div id="referralListContainer">
                     <p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>
                 </div>
             </section>
         </main>
 
-        <!-- BOTTOM NAV -->
         <nav id="bottomNav">
             <button class="nav-btn active" data-section="petSection">🐾</button>
             <button class="nav-btn" data-section="shopSection">🛒</button>
@@ -607,16 +534,13 @@
         </nav>
     </div>
 
-    <!-- ============================================
-    JAVASCRIPT
-    ============================================ -->
     <script>
         // ============================================
         // ⭐ КОНФИГУРАЦИЯ ⭐
         // ============================================
-        const SUPABASE_URL = 'https://zvetxsfegwiulsbjtufs.supabase.co';        // ЗАМЕНИТЕ
-        const SUPABASE_KEY = 'sb_publishable_mA2pfIxBGZVIP68OQmj1pg_oKRo3KDL'; // ЗАМЕНИТЕ
-        const BOT_USERNAME = 'nnvtamagochi_bot'; // ЗАМЕНИТЕ
+        const SUPABASE_URL = 'https://wkprlyzvjbxlymweykca.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_hR0wJtsFk5wNNHiF-npb9w_4SQ9t4bP';
+        const BOT_USERNAME = 'nnvtamagochi_bot';
 
         // ============================================
         // 🛡️ СИСТЕМА ЗАЩИТЫ
@@ -747,7 +671,7 @@
         }
 
         // ============================================
-        // 🛡️ ГЛОБАЛЬНЫЕ ФУНКЦИИ ЗАЩИТЫ
+        // ГЛОБАЛЬНЫЕ ФУНКЦИИ ЗАЩИТЫ
         // ============================================
         let security = null;
 
@@ -777,7 +701,7 @@
         }
 
         // ============================================
-        // 1. TELEGRAM WEBAPP
+        // TELEGRAM WEBAPP
         // ============================================
         const tg = window.Telegram.WebApp;
         if (tg) tg.expand();
@@ -788,10 +712,11 @@
         };
 
         // ============================================
-        // 2. SUPABASE
+        // SUPABASE
         // ============================================
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let dbConnected = false;
+        let isSyncing = false;
 
         async function checkConnection() {
             try {
@@ -813,7 +738,7 @@
         }
 
         // ============================================
-        // 3. СОСТОЯНИЕ
+        // СОСТОЯНИЕ
         // ============================================
         let state = {
             pet: {
@@ -846,13 +771,16 @@
                 medicine: 1,
                 skins: ['🐣']
             },
-            _timestamp: Date.now()
+            _timestamp: Date.now(),
+            _version: '2.0'
         };
 
         // ============================================
-        // 4. РАБОТА С БАЗОЙ ДАННЫХ
+        // ФУНКЦИИ ДЛЯ РАБОТЫ С БАЗОЙ ДАННЫХ
         // ============================================
-        async function loadFromSupabase() {
+
+        // Загрузка из базы
+        async function loadFromDatabase() {
             try {
                 const { data, error } = await supabase
                     .from('players')
@@ -861,36 +789,53 @@
                     .single();
 
                 if (error) {
-                    if (error.code === 'PGRST116') return false;
+                    if (error.code === 'PGRST116') {
+                        console.log('ℹ️ Новый игрок в базе');
+                        return null;
+                    }
                     throw error;
                 }
 
                 if (data) {
-                    state.pet.health = Math.round(data.health || 100);
-                    state.pet.energy = Math.round(data.energy || 100);
-                    state.pet.mood = Math.round(data.mood || 100);
-                    state.pet.hunger = Math.round(data.hunger || 100);
-                    state.pet.level = Math.round(data.level || 1);
-                    state.pet.exp = Math.round(data.exp || 0);
-                    state.pet.emoji = data.pet_emoji || '🐣';
-                    state.pet.name = data.pet_name || 'Питомец';
-                    state.user.coins = Math.round(data.coins || 0);
-                    state.user.diamonds = Math.round(data.diamonds || 0);
-                    state.user.rating = Math.round(data.rating || 0);
-                    state.user.referrals = Math.round(data.referrals || 0);
-                    state.user.referralEarned = Math.round(data.referral_earned || 0);
-                    state.user.referralList = data.referral_list || [];
-                    state.inventory = data.inventory || { food: 2, toy: 1, medicine: 1, skins: ['🐣'] };
-                    return true;
+                    console.log('✅ Данные загружены из базы');
+                    return {
+                        pet: {
+                            name: data.pet_name || 'Питомец',
+                            emoji: data.pet_emoji || '🐣',
+                            health: Math.round(data.health || 100),
+                            energy: Math.round(data.energy || 100),
+                            mood: Math.round(data.mood || 100),
+                            hunger: Math.round(data.hunger || 100),
+                            level: Math.round(data.level || 1),
+                            exp: Math.round(data.exp || 0),
+                            expToNext: data.exp_to_next || 100
+                        },
+                        user: {
+                            id: data.user_id,
+                            name: data.user_name || 'Гость',
+                            coins: Math.round(data.coins || 0),
+                            diamonds: Math.round(data.diamonds || 0),
+                            rating: Math.round(data.rating || 0),
+                            referrals: Math.round(data.referrals || 0),
+                            referralEarned: Math.round(data.referral_earned || 0),
+                            referralList: data.referral_list || [],
+                            totalPlayTime: Math.round(data.total_play_time || 0),
+                            loginStreak: Math.round(data.login_streak || 1),
+                            lastLogin: data.last_login || Date.now()
+                        },
+                        inventory: data.inventory || { food: 2, toy: 1, medicine: 1, skins: ['🐣'] },
+                        _timestamp: data._timestamp || Date.now()
+                    };
                 }
-                return false;
+                return null;
             } catch (e) {
-                console.error('❌ Ошибка загрузки:', e);
-                return false;
+                console.error('❌ Ошибка загрузки из базы:', e);
+                return null;
             }
         }
 
-        async function saveToSupabase() {
+        // Сохранение в базу
+        async function saveToDatabase(data) {
             try {
                 const saveData = {
                     user_id: state.user.id,
@@ -903,6 +848,7 @@
                     hunger: Math.round(state.pet.hunger),
                     level: Math.round(state.pet.level),
                     exp: Math.round(state.pet.exp),
+                    exp_to_next: Math.round(state.pet.expToNext),
                     coins: Math.round(state.user.coins),
                     diamonds: Math.round(state.user.diamonds),
                     rating: Math.round(state.user.rating),
@@ -913,6 +859,8 @@
                     login_streak: Math.round(state.user.loginStreak || 1),
                     last_login: state.user.lastLogin || Date.now(),
                     inventory: state.inventory,
+                    _timestamp: Date.now(),
+                    _version: '2.0',
                     updated_at: new Date().toISOString()
                 };
 
@@ -921,16 +869,99 @@
                     .upsert(saveData, { onConflict: 'user_id' });
 
                 if (error) throw error;
-                console.log('✅ Данные сохранены в Supabase');
+                console.log('✅ Данные сохранены в базу');
                 return true;
             } catch (e) {
-                console.error('❌ Ошибка сохранения:', e);
+                console.error('❌ Ошибка сохранения в базу:', e);
                 return false;
             }
         }
 
+        // Полная загрузка игры
+        async function loadGame() {
+            console.log('📂 Загрузка данных из базы...');
+
+            // Проверяем подключение
+            await checkConnection();
+
+            if (dbConnected) {
+                // Загружаем из базы
+                const dbData = await loadFromDatabase();
+                if (dbData) {
+                    Object.assign(state, dbData);
+                    console.log('✅ Данные загружены из базы');
+                    return true;
+                }
+            }
+
+            // Если база не доступна или данных нет - создаем нового игрока
+            console.log('ℹ️ Создаем нового игрока');
+            resetGame();
+            return true;
+        }
+
+        // Полное сохранение игры
+        async function saveGame() {
+            state._timestamp = Date.now();
+
+            if (dbConnected) {
+                const result = await saveToDatabase(state);
+                if (result) {
+                    document.getElementById('statusDot').className = 'status-dot online';
+                    return true;
+                } else {
+                    document.getElementById('statusDot').className = 'status-dot offline';
+                    return false;
+                }
+            } else {
+                document.getElementById('statusDot').className = 'status-dot offline';
+                console.warn('⚠️ Нет подключения к базе');
+                return false;
+            }
+        }
+
+        // Сброс игры
+        function resetGame() {
+            const userId = state.user?.id || 'guest_' + Date.now().toString(36);
+            const userName = state.user?.name || 'Гость';
+
+            state.pet = {
+                name: 'Питомец',
+                emoji: '🐣',
+                health: 100,
+                energy: 100,
+                mood: 100,
+                hunger: 100,
+                level: 1,
+                exp: 0,
+                expToNext: 100
+            };
+            state.user = {
+                id: userId,
+                name: userName,
+                coins: 100,
+                diamonds: 10,
+                rating: 0,
+                referrals: 0,
+                referralEarned: 0,
+                referralList: [],
+                totalPlayTime: 0,
+                lastLogin: Date.now(),
+                loginStreak: 1
+            };
+            state.inventory = {
+                food: 2,
+                toy: 1,
+                medicine: 1,
+                skins: ['🐣']
+            };
+            state._timestamp = Date.now();
+
+            saveGame();
+        }
+
         // ============================================
-        // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         // ============================================
         function clamp(val, min, max) {
             return Math.round(Math.max(min, Math.min(max, val)));
@@ -960,7 +991,7 @@
         }
 
         // ============================================
-        // 6. DOM ЭЛЕМЕНТЫ
+        // DOM ЭЛЕМЕНТЫ
         // ============================================
         const $ = (id) => document.getElementById(id);
         const el = {
@@ -983,22 +1014,18 @@
         };
 
         // ============================================
-        // 7. ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ)
+        // ОБНОВЛЕНИЕ UI
         // ============================================
         function updateUI() {
             const pet = state.pet;
             const user = state.user;
 
-            // Имя и уровень
             if (el.userName) el.userName.textContent = user.name || 'Гость';
             if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
-
-            // Питомец
             if (el.petEmoji) el.petEmoji.textContent = pet.emoji;
             if (el.petName) el.petName.textContent = pet.name;
             if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
-            // ⭐ БАРЫ ХАРАКТЕРИСТИК (БЕЗ ДУБЛИРОВАНИЯ) ⭐
             const bars = [
                 { id: 'healthBar', value: pet.health },
                 { id: 'energyBar', value: pet.energy },
@@ -1012,7 +1039,6 @@
                     const v = Math.round(Math.max(0, Math.min(100, bar.value)));
                     elBar.style.width = v + '%';
                     elBar.textContent = v + '%';
-
                     if (v > 70) {
                         elBar.style.background = 'linear-gradient(90deg, #66BB6A, #4CAF50)';
                     } else if (v > 40) {
@@ -1023,16 +1049,14 @@
                 }
             });
 
-            // Валюта
             if (el.coins) el.coins.textContent = `🪙 ${formatNumber(Math.floor(user.coins))}`;
             if (el.diamonds) el.diamonds.textContent = `💎 ${formatNumber(Math.floor(user.diamonds))}`;
 
-            // Рефералы
             updateReferralUI();
         }
 
         // ============================================
-        // 8. ДЕЙСТВИЯ С ПИТОМЦЕМ
+        // ДЕЙСТВИЯ С ПИТОМЦЕМ
         // ============================================
         function secureAction(action, callback, requireItem = null) {
             if (!security || security.isLocked) {
@@ -1059,8 +1083,9 @@
 
             try {
                 callback();
-                saveGame();
                 updateUI();
+                // Сохраняем в базу после каждого действия
+                saveGame();
                 return true;
             } catch (e) {
                 console.error('❌ Ошибка:', e);
@@ -1107,7 +1132,7 @@
         }
 
         // ============================================
-        // 9. СИСТЕМА УРОВНЕЙ
+        // СИСТЕМА УРОВНЕЙ
         // ============================================
         function addExp(amount) {
             state.pet.exp += amount;
@@ -1126,7 +1151,7 @@
         }
 
         // ============================================
-        // 10. МАГАЗИН
+        // МАГАЗИН
         // ============================================
         function buyItem(type) {
             const prices = {
@@ -1184,7 +1209,7 @@
         }
 
         // ============================================
-        // 11. РЕФЕРАЛЬНАЯ СИСТЕМА
+        // РЕФЕРАЛЬНАЯ СИСТЕМА
         // ============================================
         function generateReferralLink() {
             const link = `https://t.me/${BOT_USERNAME}?start=ref_${state.user.id}`;
@@ -1267,16 +1292,33 @@
         }
 
         // ============================================
-        // 12. РЕЙТИНГ
+        // РЕЙТИНГ
         // ============================================
         async function updateRating() {
             const { pet, user } = state;
-            user.rating = Math.floor(
+            const newRating = Math.floor(
                 (pet.health + pet.energy + pet.mood + pet.hunger) * 0.1 +
                 pet.level * 10 +
                 user.coins * 0.01 +
                 user.referrals * 50
             );
+
+            if (user.rating !== newRating) {
+                user.rating = newRating;
+                if (dbConnected) {
+                    try {
+                        await supabase
+                            .from('players')
+                            .update({ rating: newRating })
+                            .eq('user_id', user.id);
+                        console.log('✅ Рейтинг обновлен в базе:', newRating);
+                    } catch (e) {
+                        console.warn('⚠️ Ошибка обновления рейтинга:', e);
+                    }
+                }
+                saveGame();
+            }
+
             await updateRatingList();
         }
 
@@ -1287,33 +1329,103 @@
             try {
                 const { data, error } = await supabase
                     .from('players')
-                    .select('user_name, rating, level')
+                    .select('user_name, rating, level, coins, user_id')
                     .order('rating', { ascending: false })
-                    .limit(20);
+                    .limit(50);
 
                 if (error) throw error;
 
+                const playersMap = new Map();
+
                 if (data && data.length > 0) {
-                    ratingList.innerHTML = data.map((p, i) => {
-                        const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-                        return `<div class="rating-item">
-                            <span>${medal} ${p.user_name || 'Гость'}</span>
-                            <span>${p.rating || 0} ⭐</span>
+                    data.forEach(p => {
+                        const key = p.user_id || p.user_name;
+                        playersMap.set(key, {
+                            name: p.user_name || 'Гость',
+                            rating: p.rating || 0,
+                            level: p.level || 1,
+                            coins: p.coins || 0,
+                            isCurrent: (p.user_name === state.user.name) || (p.user_id === state.user.id)
+                        });
+                    });
+                }
+
+                const currentKey = state.user.id || state.user.name;
+                if (!playersMap.has(currentKey)) {
+                    playersMap.set(currentKey, {
+                        name: state.user.name || 'Гость',
+                        rating: state.user.rating || 0,
+                        level: state.pet.level || 1,
+                        coins: state.user.coins || 0,
+                        isCurrent: true
+                    });
+                }
+
+                const sortedPlayers = Array.from(playersMap.values())
+                    .sort((a, b) => b.rating - a.rating)
+                    .slice(0, 50);
+
+                if (sortedPlayers.length > 0) {
+                    ratingList.innerHTML = sortedPlayers.map((player, index) => {
+                        const medal = index === 0 ? '🏆' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                        const isCurrent = player.isCurrent ? ' (Вы)' : '';
+                        const ratingDisplay = player.rating || 0;
+
+                        let topClass = '';
+                        if (index === 0) topClass = 'top1';
+                        else if (index === 1) topClass = 'top2';
+                        else if (index === 2) topClass = 'top3';
+
+                        return `<div class="rating-item ${topClass} ${player.isCurrent ? 'current-player' : ''}">
+                            <span>
+                                <span class="medal">${medal}</span>
+                                ${player.name}${isCurrent}
+                                <span class="level-badge">Ур. ${player.level}</span>
+                            </span>
+                            <span class="score">${ratingDisplay} ⭐</span>
                         </div>`;
                     }).join('');
                 } else {
-                    ratingList.innerHTML =
-                        `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
+                    ratingList.innerHTML = `
+                        <div class="rating-item current-player">
+                            <span>👤 ${state.user.name} (Вы)</span>
+                            <span class="score">${state.user.rating || 0} ⭐</span>
+                        </div>
+                    `;
                 }
+
             } catch (e) {
-                console.warn('⚠️ Ошибка рейтинга:', e);
-                ratingList.innerHTML =
-                    `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
+                console.warn('⚠️ Ошибка загрузки рейтинга:', e);
+                ratingList.innerHTML = `
+                    <div class="rating-item current-player">
+                        <span>👤 ${state.user.name} (Вы)</span>
+                        <span class="score">${state.user.rating || 0} ⭐</span>
+                    </div>
+                    <div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:14px;">
+                        📡 Рейтинг временно недоступен
+                    </div>
+                `;
             }
         }
 
+        async function refreshRating() {
+            const ratingList = document.getElementById('ratingList');
+            if (ratingList) {
+                ratingList.innerHTML = `
+                    <div style="text-align:center; padding:20px; color:var(--text-secondary);">
+                        <div style="display:inline-block; width:30px; height:30px; border:3px solid var(--bg-secondary); border-top:3px solid var(--button-bg); border-radius:50%; animation: spin 0.8s linear infinite; margin-bottom:10px;"></div>
+                        <div>Обновление рейтинга...</div>
+                    </div>
+                `;
+            }
+            await updateRating();
+            showNotification('🏆 Рейтинг обновлен', 'success');
+        }
+
+        window.refreshRating = refreshRating;
+
         // ============================================
-        // 13. ИГРОВОЙ ЦИКЛ
+        // ИГРОВОЙ ЦИКЛ
         // ============================================
         let gameLoopInterval = null;
 
@@ -1340,8 +1452,8 @@
                 }
 
                 state.user.totalPlayTime += 5;
-                saveGame();
                 updateUI();
+                saveGame();
             }
 
             setTimeout(updateStats, 1000);
@@ -1349,7 +1461,7 @@
         }
 
         // ============================================
-        // 14. ЕЖЕДНЕВНЫЙ БОНУС
+        // ЕЖЕДНЕВНЫЙ БОНУС
         // ============================================
         function checkDailyBonus() {
             const now = Date.now();
@@ -1371,7 +1483,7 @@
         }
 
         // ============================================
-        // 15. УВЕДОМЛЕНИЯ
+        // УВЕДОМЛЕНИЯ
         // ============================================
         function showNotification(message, type = 'info') {
             console.log('📢', message);
@@ -1415,40 +1527,7 @@
         }
 
         // ============================================
-        // 16. СОХРАНЕНИЕ
-        // ============================================
-        async function saveGame() {
-            try {
-                localStorage.setItem('tamagochi_save', JSON.stringify(state));
-                if (dbConnected) await saveToSupabase();
-                return true;
-            } catch (e) {
-                console.error('❌ Ошибка сохранения:', e);
-                return false;
-            }
-        }
-
-        async function loadGame() {
-            await checkConnection();
-            const loaded = await loadFromSupabase();
-
-            if (!loaded) {
-                try {
-                    const local = localStorage.getItem('tamagochi_save');
-                    if (local) {
-                        const data = JSON.parse(local);
-                        Object.assign(state, data);
-                        console.log('📂 Загружено из локального кэша');
-                    }
-                } catch (e) {
-                    console.error('❌ Ошибка локальной загрузки:', e);
-                }
-            }
-            console.log('✅ Данные загружены');
-        }
-
-        // ============================================
-        // 17. НАСТРОЙКИ
+        // НАСТРОЙКИ
         // ============================================
         function setupNavigation() {
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -1504,7 +1583,7 @@
         }
 
         // ============================================
-        // 18. ИНИЦИАЛИЗАЦИЯ
+        // ИНИЦИАЛИЗАЦИЯ
         // ============================================
         async function init() {
             console.log('🚀 Инициализация...');
@@ -1514,14 +1593,22 @@
 
             await checkConnection();
             await loadGame();
+
             updateUI();
             setupNavigation();
             setupButtons();
             generateReferralLink();
             setupTelegramTheme();
+
             startGameLoop();
             checkDailyBonus();
             await updateRating();
+
+            // Автосохранение каждые 30 секунд
+            setInterval(() => {
+                saveGame();
+                console.log('💾 Автосохранение в базу...');
+            }, 30000);
 
             const startParam = tg?.initDataUnsafe?.start_param;
             if (startParam && startParam.startsWith('ref_')) {
@@ -1529,17 +1616,19 @@
             }
 
             console.log('✅ Игра запущена!');
-            console.log('📊 Характеристики:', {
+            console.log('📊 Данные:', {
+                уровень: state.pet.level,
+                монет: state.user.coins,
                 здоровье: state.pet.health,
                 энергия: state.pet.energy,
                 настроение: state.pet.mood,
                 сытость: state.pet.hunger
             });
-            console.log('🛡️ Статус защиты:', security.getStatus());
+            console.log('☁️ Статус БД:', dbConnected ? '✅ Подключена' : '⚠️ Офлайн');
         }
 
         // ============================================
-        // 19. ГЛОБАЛЬНЫЙ ДОСТУП
+        // ГЛОБАЛЬНЫЙ ДОСТУП
         // ============================================
         window.feedPet = feedPet;
         window.playPet = playPet;
@@ -1553,17 +1642,21 @@
         window.state = state;
         window.security = security;
 
-        window.addEventListener('beforeunload', () => saveGame());
+        // Сохраняем при закрытии
+        window.addEventListener('beforeunload', () => {
+            saveGame();
+            console.log('💾 Сохранено перед закрытием');
+        });
 
         // ============================================
-        // 20. ЗАПУСК
+        // ЗАПУСК
         // ============================================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📄 DOM загружен');
             init();
         });
 
-        console.log('📦 Приложение загружено (Полная исправленная версия)');
+        console.log('📦 Приложение загружено (Версия с базой данных)');
     </script>
 </body>
 </html>
