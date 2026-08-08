@@ -1,6 +1,9 @@
 // ============================================
-// APP.JS - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
+// APP.JS - РАБОТА С SUPABASE
 // ============================================
+
+// Импорт базы данных
+import { cloudDB } from './supabase.js';
 
 // ============================================
 // 1. ИНИЦИАЛИЗАЦИЯ TELEGRAM
@@ -9,13 +12,7 @@ const tg = window.Telegram.WebApp;
 if (tg) tg.expand();
 
 // ============================================
-// 2. ПОДКЛЮЧЕНИЕ ЗАЩИТЫ
-// ============================================
-const security = window.security;
-const SecureSave = security?.saveProtection;
-
-// ============================================
-// 3. СОСТОЯНИЕ ИГРЫ
+// 2. СОСТОЯНИЕ ИГРЫ
 // ============================================
 const state = {
     pet: {
@@ -38,6 +35,8 @@ const state = {
         referrals: 0,
         referralEarned: 0,
         referralList: [],
+        referralCode: null,
+        referralLink: null,
         totalPlayTime: 0,
         lastLogin: Date.now(),
         loginStreak: 1
@@ -48,13 +47,13 @@ const state = {
         medicine: 1,
         skins: ['🐣']
     },
-    _sessionId: null,
-    _fingerprint: null,
-    _timestamp: null
+    _timestamp: Date.now(),
+    _isCloudSync: false,
+    _lastCloudSave: null
 };
 
 // ============================================
-// 4. ЦЕНЫ МАГАЗИНА
+// 3. ЦЕНЫ МАГАЗИНА
 // ============================================
 const SHOP_PRICES = {
     food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
@@ -64,7 +63,7 @@ const SHOP_PRICES = {
 };
 
 // ============================================
-// 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================
 const formatNumber = (num) => {
     if (num === undefined || num === null || isNaN(num)) return '0';
@@ -78,121 +77,119 @@ const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // ============================================
-// 6. СОЗДАНИЕ ЭЛЕМЕНТОВ ВАЛЮТЫ (ГАРАНТИРОВАННО)
+// 5. DOM ЭЛЕМЕНТЫ
 // ============================================
-function createCurrencyElements() {
-    let header = document.getElementById('header');
-    if (!header) {
-        header = document.createElement('header');
-        header.id = 'header';
-        const app = document.getElementById('app');
-        if (app) app.prepend(header);
-        else document.body.prepend(header);
-    }
-    
-    let currencyContainer = header.querySelector('.currency');
-    if (!currencyContainer) {
-        currencyContainer = document.createElement('div');
-        currencyContainer.className = 'currency';
-        header.appendChild(currencyContainer);
-    }
-    
-    if (!document.getElementById('coins')) {
-        const coinsSpan = document.createElement('span');
-        coinsSpan.id = 'coins';
-        coinsSpan.textContent = '🪙 0';
-        currencyContainer.appendChild(coinsSpan);
-    }
-    
-    if (!document.getElementById('diamonds')) {
-        const diamondsSpan = document.createElement('span');
-        diamondsSpan.id = 'diamonds';
-        diamondsSpan.textContent = '💎 0';
-        currencyContainer.appendChild(diamondsSpan);
-    }
-    
-    if (!document.getElementById('userName')) {
-        const userInfo = document.createElement('div');
-        userInfo.className = 'user-info';
-        const nameSpan = document.createElement('span');
-        nameSpan.id = 'userName';
-        nameSpan.textContent = 'Гость';
-        const levelSpan = document.createElement('span');
-        levelSpan.id = 'userLevel';
-        levelSpan.textContent = 'Уровень 1';
-        userInfo.appendChild(nameSpan);
-        userInfo.appendChild(levelSpan);
-        header.prepend(userInfo);
-    }
-}
+const $ = (id) => document.getElementById(id);
+const elements = {
+    petEmoji: $('petEmoji'),
+    petName: $('petName'),
+    petStatus: $('petStatus'),
+    healthBar: $('healthBar'),
+    energyBar: $('energyBar'),
+    moodBar: $('moodBar'),
+    hungerBar: $('hungerBar'),
+    userName: $('userName'),
+    userLevel: $('userLevel'),
+    coins: $('coins'),
+    diamonds: $('diamonds'),
+    refLink: $('refLink'),
+    ratingList: $('ratingList'),
+    refCount: $('refCount'),
+    refEarned: $('refEarned'),
+    referralListContainer: $('referralListContainer')
+};
 
 // ============================================
-// 7. ОБНОВЛЕНИЕ МОНЕТ (ГАРАНТИРОВАННО РАБОТАЕТ)
+// 6. РАБОТА С БАЗОЙ ДАННЫХ
 // ============================================
-function updateCoinsDisplay() {
-    const coinsEl = document.getElementById('coins');
-    const diamondsEl = document.getElementById('diamonds');
-    
-    if (!coinsEl || !diamondsEl) {
-        createCurrencyElements();
-        const newCoins = document.getElementById('coins');
-        const newDiamonds = document.getElementById('diamonds');
-        if (newCoins) {
-            newCoins.textContent = `🪙 ${Math.floor(state.user.coins || 0)}`;
-        }
-        if (newDiamonds) {
-            newDiamonds.textContent = `💎 ${Math.floor(state.user.diamonds || 0)}`;
-        }
-        return;
-    }
-    
-    const coins = Math.floor(state.user.coins || 0);
-    const diamonds = Math.floor(state.user.diamonds || 0);
-    
-    coinsEl.textContent = `🪙 ${coins}`;
-    diamondsEl.textContent = `💎 ${diamonds}`;
-}
 
-// ============================================
-// 8. ЗАГРУЗКА/СОХРАНЕНИЕ
-// ============================================
-function loadGame() {
+// Загрузка из облака
+async function loadFromCloud() {
+    const userId = state.user.id;
+    
     try {
-        let savedData = null;
-        if (SecureSave) savedData = SecureSave.secureLoad();
-        if (!savedData) {
-            const raw = localStorage.getItem('tamagochi_save');
-            if (raw) savedData = JSON.parse(raw);
-        }
-        if (savedData && validateGameData(savedData)) {
-            Object.assign(state, savedData);
-            console.log('✅ Данные загружены');
-            return true;
+        const cloudData = await cloudDB.loadPlayer(userId);
+        
+        if (cloudData) {
+            const localTime = state._timestamp || 0;
+            const cloudTime = cloudData._timestamp || 0;
+            
+            if (cloudTime > localTime) {
+                Object.assign(state, cloudData);
+                console.log('✅ Данные загружены из Supabase');
+                return true;
+            }
         }
     } catch (e) {
-        console.error('❌ Ошибка загрузки:', e);
+        console.error('❌ Ошибка загрузки из Supabase:', e);
     }
-    console.log('ℹ️ Создано новое сохранение');
     return false;
 }
 
-function saveGame() {
+// Сохранение в облако
+async function saveToCloud() {
+    const userId = state.user.id;
     state._timestamp = Date.now();
+    
     try {
-        if (SecureSave) {
-            state._checksum = SecureSave.generateChecksum(state);
-            return SecureSave.secureSave(state);
+        const result = await cloudDB.savePlayer(userId, state);
+        if (result.success) {
+            state._lastCloudSave = Date.now();
+            console.log('✅ Данные сохранены в Supabase');
+            return true;
         }
-        localStorage.setItem('tamagochi_save', JSON.stringify(state));
-        return true;
     } catch (e) {
-        console.error('❌ Ошибка сохранения:', e);
-        return false;
+        console.error('❌ Ошибка сохранения в Supabase:', e);
     }
+    return false;
+}
+
+// Полная загрузка
+async function loadGame() {
+    console.log('📂 Загрузка данных...');
+    
+    const cloudLoaded = await loadFromCloud();
+    
+    if (!cloudLoaded) {
+        try {
+            const local = localStorage.getItem('tamagochi_local_save');
+            if (local) {
+                const data = JSON.parse(local);
+                if (validateGameData(data)) {
+                    Object.assign(state, data);
+                    console.log('📂 Загружено из локального кэша');
+                }
+            }
+        } catch (e) {
+            console.error('❌ Ошибка локальной загрузки:', e);
+        }
+    }
+    
+    if (!state.user.id) {
+        resetGame();
+    }
+    
+    console.log('✅ Данные загружены');
+    return true;
+}
+
+// Полное сохранение
+async function saveGame() {
+    state._timestamp = Date.now();
+    
+    try {
+        localStorage.setItem('tamagochi_local_save', JSON.stringify(state));
+        console.log('💾 Сохранено локально');
+    } catch (e) {
+        console.error('❌ Ошибка локального сохранения:', e);
+    }
+    
+    await saveToCloud();
+    return true;
 }
 
 // ============================================
-// 9. ВАЛИДАЦИЯ ДАННЫХ
+// 7. ВАЛИДАЦИЯ ДАННЫХ
 // ============================================
 function validateGameData(data) {
     if (!data?.pet?.health || !data?.user?.coins) return false;
@@ -213,35 +210,59 @@ function validateGameData(data) {
 }
 
 // ============================================
-// 10. СТАТУС ПИТОМЦА
+// 8. СБРОС ИГРЫ
 // ============================================
-function getPetStatus() {
-    const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
-    if (avg > 90) return '🌟 Счастлив';
-    if (avg > 75) return '😊 Доволен';
-    if (avg > 60) return '😐 Нормально';
-    if (avg > 45) return '😕 Грустноват';
-    if (avg > 30) return '😢 Грустен';
-    if (avg > 15) return '😰 Плохо';
-    return '💀 Очень плохо!';
+function resetGame() {
+    const userId = state.user?.id || 'guest_' + Date.now().toString(36);
+    const userName = state.user?.name || 'Гость';
+    
+    state.pet = {
+        name: 'Питомец',
+        emoji: '🐣',
+        health: 100,
+        energy: 100,
+        mood: 100,
+        hunger: 100,
+        level: 1,
+        exp: 0,
+        expToNext: 100
+    };
+    state.user = {
+        id: userId,
+        name: userName,
+        coins: 100,
+        diamonds: 10,
+        rating: 0,
+        referrals: 0,
+        referralEarned: 0,
+        referralList: [],
+        referralCode: null,
+        referralLink: null,
+        totalPlayTime: 0,
+        lastLogin: Date.now(),
+        loginStreak: 1
+    };
+    state.inventory = {
+        food: 2,
+        toy: 1,
+        medicine: 1,
+        skins: ['🐣']
+    };
+    
+    saveGame();
 }
 
 // ============================================
-// 11. ОБНОВЛЕНИЕ UI
+// 9. ОБНОВЛЕНИЕ UI
 // ============================================
 function updateUI() {
     const pet = state.pet;
     const user = state.user;
     
-    // Питомец
-    const petEmoji = document.getElementById('petEmoji');
-    const petName = document.getElementById('petName');
-    const petStatus = document.getElementById('petStatus');
-    if (petEmoji) petEmoji.textContent = pet.emoji;
-    if (petName) petName.textContent = pet.name;
-    if (petStatus) petStatus.textContent = getPetStatus();
+    if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
+    if (elements.petName) elements.petName.textContent = pet.name;
+    if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
     
-    // Бары
     const bars = [
         { id: 'healthBar', value: pet.health },
         { id: 'energyBar', value: pet.energy },
@@ -259,18 +280,40 @@ function updateUI() {
         }
     });
     
-    // Информация
-    const userName = document.getElementById('userName');
-    const userLevel = document.getElementById('userLevel');
-    if (userName) userName.textContent = user.name;
-    if (userLevel) userLevel.textContent = `Уровень ${pet.level}`;
+    if (elements.userName) elements.userName.textContent = user.name;
+    if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
     
-    // ВАЛЮТА
     updateCoinsDisplay();
 }
 
+function updateCoinsDisplay() {
+    const coinsEl = document.getElementById('coins');
+    const diamondsEl = document.getElementById('diamonds');
+    
+    if (coinsEl) {
+        coinsEl.textContent = `🪙 ${formatNumber(Math.floor(state.user.coins || 0))}`;
+    }
+    if (diamondsEl) {
+        diamondsEl.textContent = `💎 ${formatNumber(Math.floor(state.user.diamonds || 0))}`;
+    }
+}
+
 // ============================================
-// 12. ДЕЙСТВИЯ С ПИТОМЦЕМ
+// 10. СТАТУС ПИТОМЦА
+// ============================================
+function getPetStatus() {
+    const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
+    if (avg > 90) return '🌟 Счастлив';
+    if (avg > 75) return '😊 Доволен';
+    if (avg > 60) return '😐 Нормально';
+    if (avg > 45) return '😕 Грустноват';
+    if (avg > 30) return '😢 Грустен';
+    if (avg > 15) return '😰 Плохо';
+    return '💀 Очень плохо!';
+}
+
+// ============================================
+// 11. ДЕЙСТВИЯ С ПИТОМЦЕМ
 // ============================================
 function safeAction(action, callback, requireItem = null) {
     if (typeof callback !== 'function') return false;
@@ -331,7 +374,7 @@ function sleepPet() {
 }
 
 // ============================================
-// 13. СИСТЕМА УРОВНЕЙ
+// 12. СИСТЕМА УРОВНЕЙ
 // ============================================
 function addExp(amount) {
     state.pet.exp += amount;
@@ -352,7 +395,7 @@ function addExp(amount) {
 }
 
 // ============================================
-// 14. МАГАЗИН (ГАРАНТИРОВАННО ОБНОВЛЯЕТ МОНЕТЫ)
+// 13. МАГАЗИН
 // ============================================
 function buyItem(type) {
     const price = SHOP_PRICES[type];
@@ -373,24 +416,18 @@ function buyItem(type) {
         return;
     }
     
-    // Списание
     state.user.coins = Math.max(0, coins - price.coins);
     state.user.diamonds = Math.max(0, diamonds - price.diamonds);
     
-    // Выдача
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
-    // ⭐ ОБНОВЛЕНИЕ ⭐
     updateUI();
-    updateCoinsDisplay();
     saveGame();
-    
     showNotification(`✅ Куплено: ${price.emoji} ${price.name}! Осталось: 🪙${state.user.coins}`);
-    console.log(`🛒 Покупка: ${type} (${price.coins} монет)`);
 }
 
 function changePetSkin() {
@@ -404,20 +441,48 @@ function changePetSkin() {
 }
 
 // ============================================
-// 15. РЕФЕРАЛЬНАЯ СИСТЕМА
+// 14. РЕФЕРАЛЬНАЯ СИСТЕМА
 // ============================================
 function generateReferralLink() {
-    const link = `https://t.me/nnvtamagochi_bot?start=ref_${state.user.id}`;
-    const refLink = document.getElementById('refLink');
-    if (refLink) refLink.textContent = link;
+    const userId = state.user.id;
+    const refCode = generateReferralCode(userId);
+    const botUsername = getBotUsername();
+    const link = `https://t.me/${botUsername}?start=ref_${refCode}`;
+    
+    state.user.referralCode = refCode;
+    state.user.referralLink = link;
+    
+    const refLinkElement = document.getElementById('refLink');
+    if (refLinkElement) {
+        refLinkElement.textContent = link;
+    }
+    
+    localStorage.setItem('referral_link', link);
+    localStorage.setItem('referral_code', refCode);
+    
     return link;
 }
 
+function generateReferralCode(userId) {
+    const base = userId.replace(/[^a-zA-Z0-9]/g, '');
+    const random = Math.random().toString(36).substring(2, 8);
+    const time = Date.now().toString(36).substring(-4);
+    return `${base}_${random}_${time}`.substring(0, 20);
+}
+
+function getBotUsername() {
+    const saved = localStorage.getItem('bot_username');
+    if (saved) return saved;
+    return 'nnvtamagochi_bot'; // ЗАМЕНИТЕ
+}
+
 function copyReferralLink() {
-    const refLink = document.getElementById('refLink');
-    const link = refLink?.textContent || generateReferralLink();
+    let link = state.user.referralLink || localStorage.getItem('referral_link');
+    if (!link || link.includes('YourBotUsername')) {
+        link = generateReferralLink();
+    }
     
-    if (navigator.clipboard) {
+    if (navigator.clipboard?.writeText) {
         navigator.clipboard.writeText(link).then(() => {
             showNotification('📋 Ссылка скопирована!');
         });
@@ -433,12 +498,18 @@ function copyReferralLink() {
 }
 
 function shareReferral() {
-    const link = document.getElementById('refLink')?.textContent || generateReferralLink();
+    const link = state.user.referralLink || generateReferralLink();
+    
     if (tg?.showPopup) {
         tg.showPopup({
             title: '👥 Пригласить друга',
-            message: `Пригласи друга и получи бонус!\n🪙 +50 монет\n💎 +5 алмазов\nСсылка: ${link}`,
-            buttons: [{ type: 'ok' }]
+            message: `Пригласи друга и получи бонус!\n\n🪙 +50 монет\n💎 +5 алмазов\n⭐ +20 опыта\n\n📋 Ссылка: ${link}`,
+            buttons: [
+                { id: 'copy', type: 'default', text: '📋 Копировать' },
+                { type: 'cancel' }
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'copy') copyReferralLink();
         });
     } else {
         copyReferralLink();
@@ -446,19 +517,20 @@ function shareReferral() {
 }
 
 function updateReferralUI() {
-    const refCount = document.getElementById('refCount');
-    const refEarned = document.getElementById('refEarned');
-    const refList = document.getElementById('referralListContainer');
+    if (elements.refCount) {
+        elements.refCount.textContent = state.user.referrals || 0;
+    }
+    if (elements.refEarned) {
+        elements.refEarned.textContent = state.user.referralEarned || 0;
+    }
     
-    if (refCount) refCount.textContent = state.user.referrals || 0;
-    if (refEarned) refEarned.textContent = state.user.referralEarned || 0;
-    
-    if (refList) {
+    if (elements.referralListContainer) {
         const list = state.user.referralList || [];
         if (list.length === 0) {
-            refList.innerHTML = '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>';
+            elements.referralListContainer.innerHTML = 
+                '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>';
         } else {
-            refList.innerHTML = list.map((ref, i) => 
+            elements.referralListContainer.innerHTML = list.map((ref, i) => 
                 `<div class="referral-item">
                     <span>${i + 1}.</span>
                     <span>${ref.substring(0, 10)}...</span>
@@ -467,6 +539,48 @@ function updateReferralUI() {
             ).join('');
         }
     }
+}
+
+// ============================================
+// 15. ОБРАБОТКА РЕФЕРАЛЬНОЙ ССЫЛКИ
+// ============================================
+function handleReferralStart() {
+    const startParam = tg?.initDataUnsafe?.start_param;
+    if (startParam && startParam.startsWith('ref_')) {
+        const refCode = startParam.replace('ref_', '');
+        console.log('🔗 Реферальный код:', refCode);
+        
+        setTimeout(() => {
+            applyReferral(refCode);
+        }, 1000);
+    }
+}
+
+async function applyReferral(refCode) {
+    if (refCode === state.user.referralCode) {
+        console.warn('⚠️ Нельзя пригласить самого себя');
+        return;
+    }
+    
+    if (state.user.referralList && state.user.referralList.includes(refCode)) {
+        console.warn('⚠️ Этот пользователь уже приглашен');
+        return;
+    }
+    
+    state.user.coins += 25;
+    state.user.diamonds += 2;
+    state.pet.exp += 10;
+    
+    try {
+        await cloudDB.addReferral(refCode, state.user.id);
+    } catch (e) {
+        console.warn('⚠️ Ошибка отправки реферала в облако:', e);
+    }
+    
+    saveGame();
+    updateUI();
+    updateReferralUI();
+    showNotification('🎉 Реферальный код активирован! +🪙25 +💎2 +⭐10');
 }
 
 // ============================================
@@ -534,7 +648,7 @@ function checkDailyBonus() {
 // ============================================
 // 18. РЕЙТИНГ
 // ============================================
-function updateRating() {
+async function updateRating() {
     const { pet, user } = state;
     user.rating = Math.floor(
         (pet.health + pet.energy + pet.mood + pet.hunger) * 0.1 +
@@ -543,16 +657,39 @@ function updateRating() {
         user.referrals * 50
     );
     
+    await cloudDB.updateField(user.id, 'rating', user.rating);
+    await updateRatingList();
+}
+
+async function updateRatingList() {
     const ratingList = document.getElementById('ratingList');
-    if (ratingList) {
-        const items = [
-            { name: '🏆 ' + user.name, score: user.rating },
-            { name: '🥈 Игрок2', score: 850 },
-            { name: '🥉 Игрок3', score: 720 }
-        ];
-        ratingList.innerHTML = items
-            .map((item, i) => `<div class="rating-item">${i+1}. ${item.name} - ${item.score} очков</div>`)
-            .join('');
+    if (!ratingList) return;
+    
+    try {
+        const topPlayers = await cloudDB.getTopPlayers(20);
+        
+        if (topPlayers && topPlayers.length > 0) {
+            ratingList.innerHTML = topPlayers.map((player, i) => {
+                const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                return `<div class="rating-item">
+                    ${medal} ${player.name} - ${player.rating} очков (Уровень ${player.level})
+                </div>`;
+            }).join('');
+            
+            localStorage.setItem('top_players', JSON.stringify(topPlayers));
+        }
+    } catch (e) {
+        console.warn('⚠️ Ошибка загрузки рейтинга:', e);
+        const cached = localStorage.getItem('top_players');
+        if (cached) {
+            const players = JSON.parse(cached);
+            ratingList.innerHTML = players.map((player, i) => {
+                const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                return `<div class="rating-item">
+                    ${medal} ${player.name} - ${player.rating} очков
+                </div>`;
+            }).join('');
+        }
     }
 }
 
@@ -625,7 +762,6 @@ function setupNavigation() {
 // 21. НАСТРОЙКА КНОПОК
 // ============================================
 function setupButtons() {
-    // Кнопки действий
     const feedBtn = document.getElementById('feedBtn');
     const playBtn = document.getElementById('playBtn');
     const healBtn = document.getElementById('healBtn');
@@ -636,7 +772,6 @@ function setupButtons() {
     if (healBtn) healBtn.addEventListener('click', (e) => { e.preventDefault(); healPet(); });
     if (sleepBtn) sleepBtn.addEventListener('click', (e) => { e.preventDefault(); sleepPet(); });
     
-    // Кнопки магазина
     document.querySelectorAll('.item').forEach(el => {
         el.addEventListener('click', (e) => {
             e.preventDefault();
@@ -665,41 +800,50 @@ function setupTelegramTheme() {
 }
 
 // ============================================
-// 23. ИНИЦИАЛИЗАЦИЯ
+// 23. АВТОСОХРАНЕНИЕ
 // ============================================
-function init() {
-    console.log('🚀 Инициализация...');
+let autoSaveInterval = null;
+
+function startAutoSave() {
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
     
-    // Создаем элементы валюты
-    createCurrencyElements();
+    autoSaveInterval = setInterval(() => {
+        saveGame();
+        console.log('💾 Автосохранение в Supabase...');
+    }, 30000);
+}
+
+// ============================================
+// 24. ИНИЦИАЛИЗАЦИЯ
+// ============================================
+async function init() {
+    console.log('🚀 Инициализация с Supabase...');
     
-    // Загружаем данные
-    loadGame();
+    await loadGame();
     
-    if (security) {
-        state._sessionId = security.security?.sessionId || 'session_' + Date.now().toString(36);
-        state._fingerprint = security.multiAccount?.fingerprint || 'fingerprint_' + Date.now().toString(36);
-    }
-    state._timestamp = Date.now();
-    
-    // Обновляем UI
     updateUI();
     updateReferralUI();
     
-    // Настройки
     setupNavigation();
     setupButtons();
     generateReferralLink();
     setupTelegramTheme();
     startGameLoop();
     checkDailyBonus();
-    updateRating();
+    await updateRating();
+    startAutoSave();
+    handleReferralStart();
     
-    console.log('✅ Игра запущена!');
+    console.log('✅ Игра запущена с Supabase!');
+    console.log('📊 Текущий прогресс:', {
+        уровень: state.pet.level,
+        монет: state.user.coins,
+        здоровье: Math.round(state.pet.health)
+    });
 }
 
 // ============================================
-// 24. ГЛОБАЛЬНЫЙ ДОСТУП
+// 25. ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
 window.playPet = playPet;
@@ -709,138 +853,17 @@ window.buyItem = buyItem;
 window.shareReferral = shareReferral;
 window.copyReferralLink = copyReferralLink;
 window.updateUI = updateUI;
-window.updateCoinsDisplay = updateCoinsDisplay;
 window.saveGame = saveGame;
 window.state = state;
+window.cloudDB = cloudDB;
 
-// ============================================
-// 25. ЗАПУСК
-// ============================================
-document.addEventListener('DOMContentLoaded', init);
-console.log('📦 app.js загружен');
-
-// ============================================
-// ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СОХРАНЕНИЯ
-// ============================================
-
-function forceSave() {
-    const result = saveGame();
-    if (result) {
-        showNotification('✅ Игра сохранена!');
-        console.log('💾 Принудительное сохранение выполнено');
-    } else {
-        showNotification('❌ Ошибка сохранения!');
-    }
-}
-
-function showSaveInfo() {
-    const saved = localStorage.getItem('tamagochi_save');
-    if (saved) {
-        try {
-            const data = JSON.parse(saved);
-            const message = `📊 Уровень ${data.pet?.level}\n🪙 ${data.user?.coins} монет\n💎 ${data.user?.diamonds} алмазов\n❤️ ${Math.round(data.pet?.health)}% здоровья`;
-            showNotification(message);
-            console.log('📊 Информация о сохранении:', {
-                уровень: data.pet?.level,
-                монет: data.user?.coins,
-                алмазов: data.user?.diamonds,
-                здоровье: data.pet?.health,
-                энергия: data.pet?.energy,
-                настроение: data.pet?.mood,
-                сытость: data.pet?.hunger,
-                сохранено: new Date(data._timestamp).toLocaleString()
-            });
-        } catch (e) {
-            console.error('❌ Ошибка чтения сохранения:', e);
-            showNotification('❌ Ошибка чтения сохранения');
-        }
-    } else {
-        showNotification('❌ Сохранений нет');
-        console.log('❌ Сохранений нет');
-    }
-}
-
-function checkSaveOnLoad() {
-    const saved = localStorage.getItem('tamagochi_save');
-    if (saved) {
-        try {
-            const data = JSON.parse(saved);
-            console.log('📂 Найдено сохранение:', {
-                уровень: data.pet?.level,
-                монет: data.user?.coins,
-                время: new Date(data._timestamp).toLocaleString()
-            });
-            return true;
-        } catch (e) {
-            console.warn('⚠️ Сохранение повреждено');
-            return false;
-        }
-    }
-    console.log('ℹ️ Сохранений нет');
-    return false;
-}
-
-// Добавляем в глобальный доступ
-window.forceSave = forceSave;
-window.showSaveInfo = showSaveInfo;
-window.checkSaveOnLoad = checkSaveOnLoad;
-
-// Автосохранение
-function startAutoSave() {
-    setInterval(() => {
-        saveGame();
-        console.log('💾 Автосохранение...');
-    }, 10000);
-}
-
-// Переопределяем init
-const originalInit = init;
-init = function() {
-    console.log('🚀 Инициализация...');
-    
-    // Проверяем сохранения
-    checkSaveOnLoad();
-    
-    // Создаем элементы валюты
-    createCurrencyElements();
-    
-    // Загружаем данные
-    loadGame();
-    
-    if (security) {
-        state._sessionId = security.security?.sessionId || 'session_' + Date.now().toString(36);
-        state._fingerprint = security.multiAccount?.fingerprint || 'fingerprint_' + Date.now().toString(36);
-    }
-    state._timestamp = Date.now();
-    
-    // Обновляем UI
-    updateUI();
-    updateReferralUI();
-    
-    // Настройки
-    setupNavigation();
-    setupButtons();
-    generateReferralLink();
-    setupTelegramTheme();
-    startGameLoop();
-    checkDailyBonus();
-    updateRating();
-    
-    // Автосохранение
-    startAutoSave();
-    
-    console.log('✅ Игра запущена!');
-    console.log('📊 Текущий прогресс:', {
-        уровень: state.pet.level,
-        монет: state.user.coins,
-        здоровье: Math.round(state.pet.health)
-    });
-};
-
-// Сохраняем при закрытии
 window.addEventListener('beforeunload', function() {
     saveGame();
     console.log('💾 Сохранено перед закрытием');
 });
 
-console.log('📦 app.js загружен');
+// ============================================
+// 26. ЗАПУСК
+// ============================================
+document.addEventListener('DOMContentLoaded', init);
+console.log('📦 app.js загружен (Supabase версия)');
