@@ -718,3 +718,129 @@ window.state = state;
 // ============================================
 document.addEventListener('DOMContentLoaded', init);
 console.log('📦 app.js загружен');
+
+// ============================================
+// ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СОХРАНЕНИЯ
+// ============================================
+
+function forceSave() {
+    const result = saveGame();
+    if (result) {
+        showNotification('✅ Игра сохранена!');
+        console.log('💾 Принудительное сохранение выполнено');
+    } else {
+        showNotification('❌ Ошибка сохранения!');
+    }
+}
+
+function showSaveInfo() {
+    const saved = localStorage.getItem('tamagochi_save');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            const message = `📊 Уровень ${data.pet?.level}\n🪙 ${data.user?.coins} монет\n💎 ${data.user?.diamonds} алмазов\n❤️ ${Math.round(data.pet?.health)}% здоровья`;
+            showNotification(message);
+            console.log('📊 Информация о сохранении:', {
+                уровень: data.pet?.level,
+                монет: data.user?.coins,
+                алмазов: data.user?.diamonds,
+                здоровье: data.pet?.health,
+                энергия: data.pet?.energy,
+                настроение: data.pet?.mood,
+                сытость: data.pet?.hunger,
+                сохранено: new Date(data._timestamp).toLocaleString()
+            });
+        } catch (e) {
+            console.error('❌ Ошибка чтения сохранения:', e);
+            showNotification('❌ Ошибка чтения сохранения');
+        }
+    } else {
+        showNotification('❌ Сохранений нет');
+        console.log('❌ Сохранений нет');
+    }
+}
+
+function checkSaveOnLoad() {
+    const saved = localStorage.getItem('tamagochi_save');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            console.log('📂 Найдено сохранение:', {
+                уровень: data.pet?.level,
+                монет: data.user?.coins,
+                время: new Date(data._timestamp).toLocaleString()
+            });
+            return true;
+        } catch (e) {
+            console.warn('⚠️ Сохранение повреждено');
+            return false;
+        }
+    }
+    console.log('ℹ️ Сохранений нет');
+    return false;
+}
+
+// Добавляем в глобальный доступ
+window.forceSave = forceSave;
+window.showSaveInfo = showSaveInfo;
+window.checkSaveOnLoad = checkSaveOnLoad;
+
+// Автосохранение
+function startAutoSave() {
+    setInterval(() => {
+        saveGame();
+        console.log('💾 Автосохранение...');
+    }, 10000);
+}
+
+// Переопределяем init
+const originalInit = init;
+init = function() {
+    console.log('🚀 Инициализация...');
+    
+    // Проверяем сохранения
+    checkSaveOnLoad();
+    
+    // Создаем элементы валюты
+    createCurrencyElements();
+    
+    // Загружаем данные
+    loadGame();
+    
+    if (security) {
+        state._sessionId = security.security?.sessionId || 'session_' + Date.now().toString(36);
+        state._fingerprint = security.multiAccount?.fingerprint || 'fingerprint_' + Date.now().toString(36);
+    }
+    state._timestamp = Date.now();
+    
+    // Обновляем UI
+    updateUI();
+    updateReferralUI();
+    
+    // Настройки
+    setupNavigation();
+    setupButtons();
+    generateReferralLink();
+    setupTelegramTheme();
+    startGameLoop();
+    checkDailyBonus();
+    updateRating();
+    
+    // Автосохранение
+    startAutoSave();
+    
+    console.log('✅ Игра запущена!');
+    console.log('📊 Текущий прогресс:', {
+        уровень: state.pet.level,
+        монет: state.user.coins,
+        здоровье: Math.round(state.pet.health)
+    });
+};
+
+// Сохраняем при закрытии
+window.addEventListener('beforeunload', function() {
+    saveGame();
+    console.log('💾 Сохранено перед закрытием');
+});
+
+console.log('📦 app.js загружен');
