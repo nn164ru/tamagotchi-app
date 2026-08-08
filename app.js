@@ -1,18 +1,54 @@
 // ============================================
-// APP.JS - РАБОТА С SUPABASE
+// APP.JS - ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
-// Импорт базы данных
+// ⭐ ПРОВЕРКА TELEGRAM WebApp ⭐
+console.log('🚀 Загрузка приложения...');
+
+// Получаем Telegram WebApp
+const tg = window.Telegram.WebApp;
+
+// Проверяем, что WebApp доступен
+if (!tg) {
+    console.warn('⚠️ Telegram WebApp не найден!');
+    // Создаем заглушку для веб-версии
+    window.Telegram = window.Telegram || {};
+    window.Telegram.WebApp = {
+        expand: () => {},
+        initDataUnsafe: {
+            user: {
+                id: 'guest_' + Date.now(),
+                first_name: 'Гость',
+                username: 'guest'
+            }
+        },
+        showPopup: (params, callback) => {
+            alert(params.message);
+            if (callback) callback('ok');
+        }
+    };
+} else {
+    // Расширяем на весь экран
+    tg.expand();
+    console.log('✅ Telegram WebApp инициализирован');
+}
+
+// Получаем данные пользователя
+const userData = tg?.initDataUnsafe?.user || {
+    id: 'guest_' + Date.now().toString(36),
+    first_name: 'Гость',
+    username: 'guest'
+};
+
+console.log('👤 Данные пользователя:', userData);
+
+// ============================================
+// ИМПОРТ БАЗЫ ДАННЫХ
+// ============================================
 import { cloudDB } from './supabase.js';
 
 // ============================================
-// 1. ИНИЦИАЛИЗАЦИЯ TELEGRAM
-// ============================================
-const tg = window.Telegram.WebApp;
-if (tg) tg.expand();
-
-// ============================================
-// 2. СОСТОЯНИЕ ИГРЫ
+// 1. СОСТОЯНИЕ ИГРЫ (С ПРАВИЛЬНЫМИ ДАННЫМИ)
 // ============================================
 const state = {
     pet: {
@@ -27,8 +63,10 @@ const state = {
         expToNext: 100
     },
     user: {
-        id: tg?.initDataUnsafe?.user?.id?.toString() || 'guest_' + Date.now().toString(36),
-        name: tg?.initDataUnsafe?.user?.first_name || 'Гость',
+        // ⭐ ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ TELEGRAM ⭐
+        id: userData.id?.toString() || 'guest_' + Date.now().toString(36),
+        name: userData.first_name || userData.username || 'Гость',
+        username: userData.username || '',
         coins: 100,
         diamonds: 10,
         rating: 0,
@@ -52,8 +90,13 @@ const state = {
     _lastCloudSave: null
 };
 
+console.log('📊 Создано состояние:', {
+    id: state.user.id,
+    name: state.user.name
+});
+
 // ============================================
-// 3. ЦЕНЫ МАГАЗИНА
+// 2. ЦЕНЫ МАГАЗИНА
 // ============================================
 const SHOP_PRICES = {
     food: { coins: 10, diamonds: 0, name: 'Еда', emoji: '🍕' },
@@ -63,7 +106,7 @@ const SHOP_PRICES = {
 };
 
 // ============================================
-// 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================
 const formatNumber = (num) => {
     if (num === undefined || num === null || isNaN(num)) return '0';
@@ -77,7 +120,7 @@ const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // ============================================
-// 5. DOM ЭЛЕМЕНТЫ
+// 4. DOM ЭЛЕМЕНТЫ
 // ============================================
 const $ = (id) => document.getElementById(id);
 const elements = {
@@ -99,13 +142,21 @@ const elements = {
     referralListContainer: $('referralListContainer')
 };
 
+// Проверяем элементы
+console.log('🔍 DOM элементы:', {
+    userName: elements.userName ? '✅' : '❌',
+    coins: elements.coins ? '✅' : '❌',
+    diamonds: elements.diamonds ? '✅' : '❌'
+});
+
 // ============================================
-// 6. РАБОТА С БАЗОЙ ДАННЫХ
+// 5. РАБОТА С БАЗОЙ ДАННЫХ
 // ============================================
 
 // Загрузка из облака
 async function loadFromCloud() {
     const userId = state.user.id;
+    console.log('📂 Загрузка данных для:', userId);
     
     try {
         const cloudData = await cloudDB.loadPlayer(userId);
@@ -118,12 +169,18 @@ async function loadFromCloud() {
                 Object.assign(state, cloudData);
                 console.log('✅ Данные загружены из Supabase');
                 return true;
+            } else {
+                console.log('📂 Локальные данные новее');
+                return false;
             }
+        } else {
+            console.log('ℹ️ Новый игрок в Supabase');
+            return false;
         }
     } catch (e) {
         console.error('❌ Ошибка загрузки из Supabase:', e);
+        return false;
     }
-    return false;
 }
 
 // Сохранение в облако
@@ -173,23 +230,85 @@ async function loadGame() {
     return true;
 }
 
-// Полное сохранение
-async function saveGame() {
-    state._timestamp = Date.now();
+// ============================================
+// 6. ОБНОВЛЕНИЕ UI (С ПРОВЕРКОЙ)
+// ============================================
+function updateUI() {
+    const pet = state.pet;
+    const user = state.user;
     
-    try {
-        localStorage.setItem('tamagochi_local_save', JSON.stringify(state));
-        console.log('💾 Сохранено локально');
-    } catch (e) {
-        console.error('❌ Ошибка локального сохранения:', e);
+    // Проверяем, что элементы существуют
+    if (!elements.userName) {
+        console.warn('⚠️ Элементы DOM не найдены');
+        return;
     }
     
-    await saveToCloud();
-    return true;
+    // Обновляем имя пользователя
+    if (elements.userName) {
+        elements.userName.textContent = user.name || 'Гость';
+        console.log('👤 Имя обновлено:', user.name);
+    }
+    
+    // Обновляем уровень
+    if (elements.userLevel) {
+        elements.userLevel.textContent = `Уровень ${pet.level}`;
+    }
+    
+    // Обновляем питомца
+    if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
+    if (elements.petName) elements.petName.textContent = pet.name;
+    if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
+    
+    // Обновляем бары
+    const bars = [
+        { id: 'healthBar', value: pet.health },
+        { id: 'energyBar', value: pet.energy },
+        { id: 'moodBar', value: pet.mood },
+        { id: 'hungerBar', value: pet.hunger }
+    ];
+    
+    bars.forEach(bar => {
+        const el = document.getElementById(bar.id);
+        if (el) {
+            const v = Math.round(clamp(bar.value, 0, 100));
+            el.style.width = v + '%';
+            el.textContent = v + '%';
+            el.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
+        }
+    });
+    
+    // Обновляем валюту
+    updateCoinsDisplay();
+}
+
+function updateCoinsDisplay() {
+    const coinsEl = document.getElementById('coins');
+    const diamondsEl = document.getElementById('diamonds');
+    
+    if (coinsEl) {
+        coinsEl.textContent = `🪙 ${formatNumber(Math.floor(state.user.coins || 0))}`;
+    }
+    if (diamondsEl) {
+        diamondsEl.textContent = `💎 ${formatNumber(Math.floor(state.user.diamonds || 0))}`;
+    }
 }
 
 // ============================================
-// 7. ВАЛИДАЦИЯ ДАННЫХ
+// 7. СТАТУС ПИТОМЦА
+// ============================================
+function getPetStatus() {
+    const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
+    if (avg > 90) return '🌟 Счастлив';
+    if (avg > 75) return '😊 Доволен';
+    if (avg > 60) return '😐 Нормально';
+    if (avg > 45) return '😕 Грустноват';
+    if (avg > 30) return '😢 Грустен';
+    if (avg > 15) return '😰 Плохо';
+    return '💀 Очень плохо!';
+}
+
+// ============================================
+// 8. ВАЛИДАЦИЯ ДАННЫХ
 // ============================================
 function validateGameData(data) {
     if (!data?.pet?.health || !data?.user?.coins) return false;
@@ -210,7 +329,7 @@ function validateGameData(data) {
 }
 
 // ============================================
-// 8. СБРОС ИГРЫ
+// 9. СБРОС ИГРЫ
 // ============================================
 function resetGame() {
     const userId = state.user?.id || 'guest_' + Date.now().toString(36);
@@ -230,6 +349,7 @@ function resetGame() {
     state.user = {
         id: userId,
         name: userName,
+        username: state.user?.username || '',
         coins: 100,
         diamonds: 10,
         rating: 0,
@@ -253,63 +373,20 @@ function resetGame() {
 }
 
 // ============================================
-// 9. ОБНОВЛЕНИЕ UI
+// 10. СОХРАНЕНИЕ
 // ============================================
-function updateUI() {
-    const pet = state.pet;
-    const user = state.user;
+async function saveGame() {
+    state._timestamp = Date.now();
     
-    if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
-    if (elements.petName) elements.petName.textContent = pet.name;
-    if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
-    
-    const bars = [
-        { id: 'healthBar', value: pet.health },
-        { id: 'energyBar', value: pet.energy },
-        { id: 'moodBar', value: pet.mood },
-        { id: 'hungerBar', value: pet.hunger }
-    ];
-    
-    bars.forEach(bar => {
-        const el = document.getElementById(bar.id);
-        if (el) {
-            const v = Math.round(clamp(bar.value, 0, 100));
-            el.style.width = v + '%';
-            el.textContent = v + '%';
-            el.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
-        }
-    });
-    
-    if (elements.userName) elements.userName.textContent = user.name;
-    if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
-    
-    updateCoinsDisplay();
-}
-
-function updateCoinsDisplay() {
-    const coinsEl = document.getElementById('coins');
-    const diamondsEl = document.getElementById('diamonds');
-    
-    if (coinsEl) {
-        coinsEl.textContent = `🪙 ${formatNumber(Math.floor(state.user.coins || 0))}`;
+    try {
+        localStorage.setItem('tamagochi_local_save', JSON.stringify(state));
+        console.log('💾 Сохранено локально');
+    } catch (e) {
+        console.error('❌ Ошибка локального сохранения:', e);
     }
-    if (diamondsEl) {
-        diamondsEl.textContent = `💎 ${formatNumber(Math.floor(state.user.diamonds || 0))}`;
-    }
-}
-
-// ============================================
-// 10. СТАТУС ПИТОМЦА
-// ============================================
-function getPetStatus() {
-    const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
-    if (avg > 90) return '🌟 Счастлив';
-    if (avg > 75) return '😊 Доволен';
-    if (avg > 60) return '😐 Нормально';
-    if (avg > 45) return '😕 Грустноват';
-    if (avg > 30) return '😢 Грустен';
-    if (avg > 15) return '😰 Плохо';
-    return '💀 Очень плохо!';
+    
+    await saveToCloud();
+    return true;
 }
 
 // ============================================
@@ -819,6 +896,18 @@ function startAutoSave() {
 async function init() {
     console.log('🚀 Инициализация с Supabase...');
     
+    // Проверяем, что данные пользователя получены
+    if (!state.user.id || state.user.id === 'guest_undefined') {
+        console.warn('⚠️ Нет данных пользователя, создаем гостя');
+        state.user.id = 'guest_' + Date.now().toString(36);
+        state.user.name = 'Гость';
+    }
+    
+    console.log('👤 Пользователь:', {
+        id: state.user.id,
+        name: state.user.name
+    });
+    
     await loadGame();
     
     updateUI();
@@ -865,5 +954,9 @@ window.addEventListener('beforeunload', function() {
 // ============================================
 // 26. ЗАПУСК
 // ============================================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM загружен');
+    init();
+});
+
 console.log('📦 app.js загружен (Supabase версия)');
