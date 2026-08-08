@@ -8,9 +8,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
     <style>
-        /* ===== СТИЛИ ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* ============================================
+           СТИЛИ
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
             --bg-primary: #ffffff;
             --bg-secondary: #f0f0f0;
@@ -22,8 +28,9 @@
             --danger: #f44336;
             --success: #4CAF50;
             --warning: #FFA726;
+            --shadow: rgba(0,0,0,0.1);
         }
-        
+
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-primary: #1a1a1a;
@@ -32,11 +39,12 @@
                 --text-secondary: #cccccc;
                 --border-color: #444444;
                 --button-bg: #0099ff;
+                --shadow: rgba(0,0,0,0.3);
             }
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             margin: 0;
@@ -46,7 +54,7 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         #app {
             max-width: 480px;
             width: 100%;
@@ -56,7 +64,10 @@
             flex-direction: column;
             position: relative;
         }
-        
+
+        /* ============================================
+           ЗАЩИТНЫЙ ОВЕРЛЕЙ
+           ============================================ */
         #securityOverlay {
             display: none;
             position: fixed;
@@ -86,8 +97,13 @@
             border-radius: 10px;
             font-size: 16px;
             cursor: pointer;
+            transition: transform 0.2s;
         }
-        
+        #securityOverlay .btn:active { transform: scale(0.95); }
+
+        /* ============================================
+           HEADER
+           ============================================ */
         #header {
             background: var(--bg-secondary);
             padding: 15px 20px;
@@ -97,12 +113,18 @@
             border-bottom: 1px solid var(--border-color);
             flex-shrink: 0;
         }
-        
+
         .user-info { display: flex; flex-direction: column; gap: 2px; }
         #userName { font-weight: bold; font-size: 16px; }
         #userLevel { font-size: 12px; color: var(--text-secondary); }
-        .currency { display: flex; gap: 15px; font-size: 14px; font-weight: bold; align-items: center; }
-        
+        .currency {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            align-items: center;
+        }
+
         .status-dot {
             display: inline-block;
             width: 10px;
@@ -112,17 +134,20 @@
         }
         .status-dot.online { background: var(--success); }
         .status-dot.offline { background: var(--danger); }
-        
+
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
         #mainContent {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
             padding-bottom: 80px;
         }
-        
+
         section { display: none; animation: fadeIn 0.3s ease; }
         section.active { display: block; }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -131,53 +156,85 @@
             from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        
-        .pet-container { text-align: center; padding: 20px 0; }
-        #petEmoji { font-size: 100px; line-height: 1.2; transition: transform 0.3s; user-select: none; }
+
+        /* ============================================
+           ПИТОМЕЦ
+           ============================================ */
+        .pet-container {
+            text-align: center;
+            padding: 20px 0;
+        }
+        #petEmoji {
+            font-size: 100px;
+            line-height: 1.2;
+            transition: transform 0.3s;
+            user-select: none;
+        }
         #petEmoji:hover { transform: scale(1.1); }
-        #petName { font-size: 24px; font-weight: bold; margin: 10px 0 5px; }
-        #petStatus { font-size: 16px; color: var(--text-secondary); }
-        
+        #petName {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0 5px;
+        }
+        #petStatus {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           СТАТИСТИКА
+           ============================================ */
         .stats { margin: 20px 0; }
-        .stat { margin-bottom: 12px; }
-        .stat span { display: block; font-size: 14px; margin-bottom: 4px; }
-        
+        .stat { margin-bottom: 15px; }
+        .stat span {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
         .progress-bar {
             width: 100%;
-            height: 24px;
+            height: 26px;
             background: var(--bg-secondary);
-            border-radius: 10px;
+            border-radius: 13px;
             overflow: hidden;
             border: 1px solid var(--border-color);
             position: relative;
         }
-        
+
         .progress-bar div {
             height: 100%;
-            transition: width 0.3s ease;
-            border-radius: 10px;
+            transition: width 0.5s ease;
+            border-radius: 13px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 12px;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 13px;
             color: white;
             font-weight: bold;
-            text-shadow: 0 0 3px rgba(0,0,0,0.5);
-            min-width: 30px;
+            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+            min-width: 40px;
+            white-space: nowrap;
         }
-        
-        #healthBar { background: var(--success); }
-        #energyBar { background: var(--warning); }
-        #moodBar { background: #42A5F5; }
-        #hungerBar { background: var(--danger); }
-        
+
+        #healthBar { background: linear-gradient(90deg, #66BB6A, #4CAF50); }
+        #energyBar { background: linear-gradient(90deg, #FFA726, #FB8C00); }
+        #moodBar { background: linear-gradient(90deg, #42A5F5, #1565C0); }
+        #hungerBar { background: linear-gradient(90deg, #EF5350, #C62828); }
+
+        /* ============================================
+           ДЕЙСТВИЯ
+           ============================================ */
         .actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-top: 20px;
         }
-        
+
         .actions button {
             padding: 12px;
             border: none;
@@ -192,21 +249,24 @@
         }
         .actions button:active { transform: scale(0.95); opacity: 0.8; }
         .actions button:disabled { opacity: 0.5; cursor: not-allowed; }
-        
+
+        /* ============================================
+           МАГАЗИН
+           ============================================ */
         .shop-items {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-top: 15px;
         }
-        
+
         .item {
             background: var(--bg-secondary);
             padding: 15px;
             border-radius: 12px;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
@@ -215,8 +275,14 @@
         }
         .item:active { transform: scale(0.95); }
         .item span:first-child { font-size: 18px; }
-        .item span:last-child { font-size: 14px; color: var(--text-secondary); }
-        
+        .item span:last-child {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           РЕЙТИНГ
+           ============================================ */
         .rating-item {
             padding: 12px;
             margin-bottom: 8px;
@@ -228,7 +294,87 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
+        /* ============================================
+           РЕФЕРАЛЫ
+           ============================================ */
+        .referral-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .stat-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .referral-link-box {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+        }
+        .link-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .link-container span {
+            flex: 1;
+            word-break: break-all;
+            font-size: 12px;
+        }
+
+        .copy-btn, .share-btn {
+            padding: 10px 15px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+        .copy-btn:active, .share-btn:active { transform: scale(0.95); }
+        .share-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .referral-item {
+            display: flex;
+            gap: 10px;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin: 5px 0;
+            border: 1px solid var(--border-color);
+        }
+        #referralListContainer { margin-top: 15px; }
+
+        /* ============================================
+           НАВИГАЦИЯ
+           ============================================ */
         #bottomNav {
             position: fixed;
             bottom: 0;
@@ -243,7 +389,7 @@
             border-top: 1px solid var(--border-color);
             z-index: 100;
         }
-        
+
         .nav-btn {
             background: none;
             border: none;
@@ -255,63 +401,10 @@
         }
         .nav-btn.active { opacity: 1; transform: scale(1.1); }
         .nav-btn:active { transform: scale(0.9); }
-        
-        .referral-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .stat-item {
-            background: var(--bg-secondary);
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-        .stat-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
-        .stat-value { display: block; font-size: 24px; font-weight: bold; }
-        
-        .referral-link-box {
-            background: var(--bg-secondary);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border: 1px solid var(--border-color);
-        }
-        .link-container { display: flex; gap: 10px; align-items: center; }
-        .link-container span { flex: 1; word-break: break-all; font-size: 12px; }
-        
-        .copy-btn, .share-btn {
-            padding: 10px 15px;
-            background: var(--button-bg);
-            color: var(--button-text);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .copy-btn:active, .share-btn:active { transform: scale(0.95); }
-        .share-btn {
-            width: 100%;
-            margin-top: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .referral-item {
-            display: flex;
-            gap: 10px;
-            padding: 8px;
-            background: var(--bg-secondary);
-            border-radius: 6px;
-            margin: 5px 0;
-            border: 1px solid var(--border-color);
-        }
-        #referralListContainer { margin-top: 15px; }
-        
+
+        /* ============================================
+           УВЕДОМЛЕНИЯ
+           ============================================ */
         #notificationContainer {
             position: fixed;
             top: 20px;
@@ -338,9 +431,17 @@
         }
         .notification .icon { font-size: 20px; }
         .notification .text { flex: 1; }
-        .notification .close { cursor: pointer; opacity: 0.5; font-size: 18px; }
+        .notification .close {
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 18px;
+            transition: opacity 0.2s;
+        }
         .notification .close:hover { opacity: 1; }
-        
+
+        /* ============================================
+           АДАПТИВ
+           ============================================ */
         @media (max-width: 480px) {
             #header { padding: 12px 15px; }
             #mainContent { padding: 15px; padding-bottom: 75px; }
@@ -354,13 +455,16 @@
             #userName { font-size: 14px; }
             .actions button { font-size: 12px; padding: 10px; }
         }
-        
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-secondary); }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
     </style>
 </head>
 <body>
+    <!-- ============================================
+    ЗАЩИТНЫЙ ОВЕРЛЕЙ
+    ============================================ -->
     <div id="securityOverlay">
         <div class="icon">🛡️</div>
         <div class="title">Доступ заблокирован</div>
@@ -368,9 +472,16 @@
         <button class="btn" onclick="unlockGame()">🔓 Разблокировать</button>
     </div>
 
+    <!-- ============================================
+    УВЕДОМЛЕНИЯ
+    ============================================ -->
     <div id="notificationContainer"></div>
 
+    <!-- ============================================
+    ПРИЛОЖЕНИЕ
+    ============================================ -->
     <div id="app">
+        <!-- HEADER -->
         <header id="header">
             <div class="user-info">
                 <span id="userName">Загрузка...</span>
@@ -383,7 +494,9 @@
             </div>
         </header>
 
+        <!-- MAIN CONTENT -->
         <main id="mainContent">
+            <!-- PET -->
             <section id="petSection" class="active">
                 <div class="pet-container">
                     <div id="petEmoji">🐣</div>
@@ -392,20 +505,28 @@
                 </div>
                 <div class="stats">
                     <div class="stat">
-                        <span>❤️ Здоровье <span id="healthVal">100</span>%</span>
-                        <div class="progress-bar"><div id="healthBar" style="width: 100%">100%</div></div>
+                        <span>❤️ Здоровье</span>
+                        <div class="progress-bar">
+                            <div id="healthBar" style="width: 100%">100%</div>
+                        </div>
                     </div>
                     <div class="stat">
-                        <span>⚡ Энергия <span id="energyVal">100</span>%</span>
-                        <div class="progress-bar"><div id="energyBar" style="width: 100%">100%</div></div>
+                        <span>⚡ Энергия</span>
+                        <div class="progress-bar">
+                            <div id="energyBar" style="width: 100%">100%</div>
+                        </div>
                     </div>
                     <div class="stat">
-                        <span>😊 Настроение <span id="moodVal">100</span>%</span>
-                        <div class="progress-bar"><div id="moodBar" style="width: 100%">100%</div></div>
+                        <span>😊 Настроение</span>
+                        <div class="progress-bar">
+                            <div id="moodBar" style="width: 100%">100%</div>
+                        </div>
                     </div>
                     <div class="stat">
-                        <span>🍔 Сытость <span id="hungerVal">100</span>%</span>
-                        <div class="progress-bar"><div id="hungerBar" style="width: 100%">100%</div></div>
+                        <span>🍔 Сытость</span>
+                        <div class="progress-bar">
+                            <div id="hungerBar" style="width: 100%">100%</div>
+                        </div>
                     </div>
                 </div>
                 <div class="actions">
@@ -416,27 +537,51 @@
                 </div>
             </section>
 
+            <!-- SHOP -->
             <section id="shopSection">
                 <h2>🛒 Магазин</h2>
                 <div class="shop-items">
-                    <div class="item" data-item="food"><span>🍕 Еда</span><span>🪙 10</span></div>
-                    <div class="item" data-item="toy"><span>🧸 Игрушка</span><span>🪙 15</span></div>
-                    <div class="item" data-item="medicine"><span>💊 Лекарство</span><span>🪙 20</span></div>
-                    <div class="item" data-item="skin"><span>🎨 Скин</span><span>💎 5</span></div>
+                    <div class="item" data-item="food">
+                        <span>🍕 Еда</span>
+                        <span>🪙 10</span>
+                    </div>
+                    <div class="item" data-item="toy">
+                        <span>🧸 Игрушка</span>
+                        <span>🪙 15</span>
+                    </div>
+                    <div class="item" data-item="medicine">
+                        <span>💊 Лекарство</span>
+                        <span>🪙 20</span>
+                    </div>
+                    <div class="item" data-item="skin">
+                        <span>🎨 Скин</span>
+                        <span>💎 5</span>
+                    </div>
                 </div>
             </section>
 
+            <!-- RATING -->
             <section id="ratingSection">
                 <h2>🏆 Рейтинг</h2>
-                <div id="ratingList"><div class="rating-item">Загрузка...</div></div>
+                <div id="ratingList">
+                    <div class="rating-item">Загрузка...</div>
+                </div>
             </section>
 
+            <!-- REFERRAL -->
             <section id="referralSection">
                 <h2>👥 Реферальная система</h2>
                 <div class="referral-stats">
-                    <div class="stat-item"><span class="stat-label">👥 Приглашено</span><span class="stat-value" id="refCount">0</span></div>
-                    <div class="stat-item"><span class="stat-label">🪙 Заработано</span><span class="stat-value" id="refEarned">0</span></div>
+                    <div class="stat-item">
+                        <span class="stat-label">👥 Приглашено</span>
+                        <span class="stat-value" id="refCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🪙 Заработано</span>
+                        <span class="stat-value" id="refEarned">0</span>
+                    </div>
                 </div>
+
                 <div class="referral-link-box">
                     <p>📋 Ваша ссылка:</p>
                     <div class="link-container">
@@ -444,11 +589,16 @@
                         <button onclick="copyReferralLink()" class="copy-btn">📋 Копировать</button>
                     </div>
                 </div>
+
                 <button onclick="shareReferral()" class="share-btn">📤 Пригласить друга</button>
-                <div id="referralListContainer"><p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p></div>
+
+                <div id="referralListContainer">
+                    <p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>
+                </div>
             </section>
         </main>
 
+        <!-- BOTTOM NAV -->
         <nav id="bottomNav">
             <button class="nav-btn active" data-section="petSection">🐾</button>
             <button class="nav-btn" data-section="shopSection">🛒</button>
@@ -457,13 +607,17 @@
         </nav>
     </div>
 
+    <!-- ============================================
+    JAVASCRIPT
+    ============================================ -->
     <script>
         // ============================================
         // ⭐ КОНФИГУРАЦИЯ ⭐
         // ============================================
-        const SUPABASE_URL = 'https://zvetxsfegwiulsbjtufs.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_mA2pfIxBGZVIP68OQmj1pg_oKRo3KDL';
-        
+        const SUPABASE_URL = 'https://zvetxsfegwiulsbjtufs.supabase.co';        // ЗАМЕНИТЕ
+        const SUPABASE_KEY = 'sb_publishable_mA2pfIxBGZVIP68OQmj1pg_oKRo3KDL'; // ЗАМЕНИТЕ
+        const BOT_USERNAME = 'nnvtamagochi_bot'; // ЗАМЕНИТЕ
+
         // ============================================
         // 🛡️ СИСТЕМА ЗАЩИТЫ
         // ============================================
@@ -488,7 +642,7 @@
             protectConsole() {
                 const originalLog = console.log;
                 console.log = function(...args) {
-                    if (args.some(a => typeof a === 'string' && 
+                    if (args.some(a => typeof a === 'string' &&
                         (a.includes('localStorage') || a.includes('state')))) {
                         return;
                     }
@@ -499,7 +653,7 @@
             protectEval() {
                 const originalEval = window.eval;
                 window.eval = function(code) {
-                    if (typeof code === 'string' && 
+                    if (typeof code === 'string' &&
                         (code.includes('localStorage') || code.includes('state'))) {
                         return null;
                     }
@@ -593,7 +747,7 @@
         }
 
         // ============================================
-        // 🛡️ ГЛОБАЛЬНЫЕ ФУНКЦИИ
+        // 🛡️ ГЛОБАЛЬНЫЕ ФУНКЦИИ ЗАЩИТЫ
         // ============================================
         let security = null;
 
@@ -623,7 +777,7 @@
         }
 
         // ============================================
-        // 1. TELEGRAM
+        // 1. TELEGRAM WEBAPP
         // ============================================
         const tg = window.Telegram.WebApp;
         if (tg) tg.expand();
@@ -645,18 +799,21 @@
                 if (!error) {
                     dbConnected = true;
                     document.getElementById('statusDot').className = 'status-dot online';
+                    console.log('✅ Supabase подключен');
                 } else {
                     dbConnected = false;
                     document.getElementById('statusDot').className = 'status-dot offline';
+                    console.warn('⚠️ Supabase не доступен');
                 }
             } catch (e) {
                 dbConnected = false;
                 document.getElementById('statusDot').className = 'status-dot offline';
+                console.warn('⚠️ Ошибка подключения к Supabase');
             }
         }
 
         // ============================================
-        // 3. СОСТОЯНИЕ (С ЦЕЛЫМИ ЧИСЛАМИ)
+        // 3. СОСТОЯНИЕ
         // ============================================
         let state = {
             pet: {
@@ -693,7 +850,7 @@
         };
 
         // ============================================
-        // 4. БД
+        // 4. РАБОТА С БАЗОЙ ДАННЫХ
         // ============================================
         async function loadFromSupabase() {
             try {
@@ -709,7 +866,6 @@
                 }
 
                 if (data) {
-                    // ⭐ ОКРУГЛЯЕМ ВСЕ ЗНАЧЕНИЯ ⭐
                     state.pet.health = Math.round(data.health || 100);
                     state.pet.energy = Math.round(data.energy || 100);
                     state.pet.mood = Math.round(data.mood || 100);
@@ -736,7 +892,6 @@
 
         async function saveToSupabase() {
             try {
-                // ⭐ ОКРУГЛЯЕМ ПЕРЕД СОХРАНЕНИЕМ ⭐
                 const saveData = {
                     user_id: state.user.id,
                     user_name: state.user.name,
@@ -766,6 +921,7 @@
                     .upsert(saveData, { onConflict: 'user_id' });
 
                 if (error) throw error;
+                console.log('✅ Данные сохранены в Supabase');
                 return true;
             } catch (e) {
                 console.error('❌ Ошибка сохранения:', e);
@@ -774,16 +930,16 @@
         }
 
         // ============================================
-        // 5. ВСПОМОГАТЕЛЬНЫЕ
+        // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         // ============================================
-        function clamp(val, min, max) { 
-            return Math.round(Math.max(min, Math.min(max, val))); 
+        function clamp(val, min, max) {
+            return Math.round(Math.max(min, Math.min(max, val)));
         }
-        
-        function randomInt(min, max) { 
-            return Math.floor(Math.random() * (max - min + 1)) + min; 
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
-        
+
         function formatNumber(num) {
             if (num === undefined || num === null || isNaN(num)) return '0';
             num = Math.floor(num);
@@ -792,26 +948,6 @@
             return num.toString();
         }
 
-        // ============================================
-        // 6. DOM
-        // ============================================
-        const $ = (id) => document.getElementById(id);
-        const el = {
-            petEmoji: $('petEmoji'), petName: $('petName'), petStatus: $('petStatus'),
-            healthBar: $('healthBar'), healthVal: $('healthVal'),
-            energyBar: $('energyBar'), energyVal: $('energyVal'),
-            moodBar: $('moodBar'), moodVal: $('moodVal'),
-            hungerBar: $('hungerBar'), hungerVal: $('hungerVal'),
-            userName: $('userName'), userLevel: $('userLevel'),
-            coins: $('coins'), diamonds: $('diamonds'),
-            refLink: $('refLink'), ratingList: $('ratingList'),
-            refCount: $('refCount'), refEarned: $('refEarned'),
-            referralListContainer: $('referralListContainer')
-        };
-
-        // ============================================
-        // 7. СТАТУС
-        // ============================================
         function getPetStatus() {
             const avg = (state.pet.health + state.pet.energy + state.pet.mood + state.pet.hunger) / 4;
             if (avg > 90) return '🌟 Счастлив';
@@ -824,7 +960,30 @@
         }
 
         // ============================================
-        // 8. ⭐ ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ) ⭐
+        // 6. DOM ЭЛЕМЕНТЫ
+        // ============================================
+        const $ = (id) => document.getElementById(id);
+        const el = {
+            petEmoji: $('petEmoji'),
+            petName: $('petName'),
+            petStatus: $('petStatus'),
+            healthBar: $('healthBar'),
+            energyBar: $('energyBar'),
+            moodBar: $('moodBar'),
+            hungerBar: $('hungerBar'),
+            userName: $('userName'),
+            userLevel: $('userLevel'),
+            coins: $('coins'),
+            diamonds: $('diamonds'),
+            refLink: $('refLink'),
+            ratingList: $('ratingList'),
+            refCount: $('refCount'),
+            refEarned: $('refEarned'),
+            referralListContainer: $('referralListContainer')
+        };
+
+        // ============================================
+        // 7. ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ)
         // ============================================
         function updateUI() {
             const pet = state.pet;
@@ -833,42 +992,33 @@
             // Имя и уровень
             if (el.userName) el.userName.textContent = user.name || 'Гость';
             if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
-            
+
             // Питомец
             if (el.petEmoji) el.petEmoji.textContent = pet.emoji;
             if (el.petName) el.petName.textContent = pet.name;
             if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
-            // ⭐ БАРЫ ХАРАКТЕРИСТИК (С ОКРУГЛЕНИЕМ) ⭐
+            // ⭐ БАРЫ ХАРАКТЕРИСТИК (БЕЗ ДУБЛИРОВАНИЯ) ⭐
             const bars = [
-                { id: 'healthBar', valId: 'healthVal', value: pet.health, name: 'Здоровье' },
-                { id: 'energyBar', valId: 'energyVal', value: pet.energy, name: 'Энергия' },
-                { id: 'moodBar', valId: 'moodVal', value: pet.mood, name: 'Настроение' },
-                { id: 'hungerBar', valId: 'hungerVal', value: pet.hunger, name: 'Сытость' }
+                { id: 'healthBar', value: pet.health },
+                { id: 'energyBar', value: pet.energy },
+                { id: 'moodBar', value: pet.mood },
+                { id: 'hungerBar', value: pet.hunger }
             ];
 
             bars.forEach(bar => {
                 const elBar = document.getElementById(bar.id);
-                const elVal = document.getElementById(bar.valId);
-                
                 if (elBar) {
-                    // ⭐ ОКРУГЛЯЕМ ДО ЦЕЛОГО ЧИСЛА ⭐
-                    const v = Math.round(clamp(bar.value, 0, 100));
-                    
-                    // Обновляем ширину
+                    const v = Math.round(Math.max(0, Math.min(100, bar.value)));
                     elBar.style.width = v + '%';
                     elBar.textContent = v + '%';
-                    
-                    // Обновляем текстовое значение
-                    if (elVal) elVal.textContent = v;
-                    
-                    // Обновляем цвет
+
                     if (v > 70) {
-                        elBar.style.background = '#4CAF50';
+                        elBar.style.background = 'linear-gradient(90deg, #66BB6A, #4CAF50)';
                     } else if (v > 40) {
-                        elBar.style.background = '#FFA726';
+                        elBar.style.background = 'linear-gradient(90deg, #FFA726, #FB8C00)';
                     } else {
-                        elBar.style.background = '#f44336';
+                        elBar.style.background = 'linear-gradient(90deg, #EF5350, #C62828)';
                     }
                 }
             });
@@ -876,13 +1026,13 @@
             // Валюта
             if (el.coins) el.coins.textContent = `🪙 ${formatNumber(Math.floor(user.coins))}`;
             if (el.diamonds) el.diamonds.textContent = `💎 ${formatNumber(Math.floor(user.diamonds))}`;
-            
+
             // Рефералы
             updateReferralUI();
         }
 
         // ============================================
-        // 9. ДЕЙСТВИЯ
+        // 8. ДЕЙСТВИЯ С ПИТОМЦЕМ
         // ============================================
         function secureAction(action, callback, requireItem = null) {
             if (!security || security.isLocked) {
@@ -957,7 +1107,7 @@
         }
 
         // ============================================
-        // 10. УРОВНИ
+        // 9. СИСТЕМА УРОВНЕЙ
         // ============================================
         function addExp(amount) {
             state.pet.exp += amount;
@@ -976,7 +1126,7 @@
         }
 
         // ============================================
-        // 11. МАГАЗИН
+        // 10. МАГАЗИН
         // ============================================
         function buyItem(type) {
             const prices = {
@@ -1034,11 +1184,10 @@
         }
 
         // ============================================
-        // 12. РЕФЕРАЛЫ
+        // 11. РЕФЕРАЛЬНАЯ СИСТЕМА
         // ============================================
         function generateReferralLink() {
-            const botUsername = 'nnvtamagochi_bot';
-            const link = `https://t.me/${botUsername}?start=ref_${state.user.id}`;
+            const link = `https://t.me/${BOT_USERNAME}?start=ref_${state.user.id}`;
             if (el.refLink) el.refLink.textContent = link;
             return link;
         }
@@ -1062,6 +1211,7 @@
 
         function shareReferral() {
             const link = el.refLink?.textContent || generateReferralLink();
+
             if (tg?.showPopup) {
                 tg.showPopup({
                     title: '👥 Пригласить друга',
@@ -1081,13 +1231,19 @@
         function updateReferralUI() {
             if (el.refCount) el.refCount.textContent = state.user.referrals || 0;
             if (el.refEarned) el.refEarned.textContent = state.user.referralEarned || 0;
+
             if (el.referralListContainer) {
                 const list = state.user.referralList || [];
                 if (list.length === 0) {
-                    el.referralListContainer.innerHTML = '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>';
+                    el.referralListContainer.innerHTML =
+                        '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>';
                 } else {
                     el.referralListContainer.innerHTML = list.map((ref, i) =>
-                        `<div class="referral-item"><span>${i + 1}.</span><span>${ref.substring(0, 10)}...</span><span>✅</span></div>`
+                        `<div class="referral-item">
+                            <span>${i + 1}.</span>
+                            <span>${ref.substring(0, 10)}...</span>
+                            <span>✅</span>
+                        </div>`
                     ).join('');
                 }
             }
@@ -1111,7 +1267,7 @@
         }
 
         // ============================================
-        // 13. РЕЙТИНГ
+        // 12. РЕЙТИНГ
         // ============================================
         async function updateRating() {
             const { pet, user } = state;
@@ -1127,40 +1283,49 @@
         async function updateRatingList() {
             const ratingList = document.getElementById('ratingList');
             if (!ratingList) return;
+
             try {
                 const { data, error } = await supabase
                     .from('players')
                     .select('user_name, rating, level')
                     .order('rating', { ascending: false })
                     .limit(20);
+
                 if (error) throw error;
+
                 if (data && data.length > 0) {
                     ratingList.innerHTML = data.map((p, i) => {
                         const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-                        return `<div class="rating-item"><span>${medal} ${p.user_name || 'Гость'}</span><span>${p.rating || 0} ⭐</span></div>`;
+                        return `<div class="rating-item">
+                            <span>${medal} ${p.user_name || 'Гость'}</span>
+                            <span>${p.rating || 0} ⭐</span>
+                        </div>`;
                     }).join('');
                 } else {
-                    ratingList.innerHTML = `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
+                    ratingList.innerHTML =
+                        `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
                 }
             } catch (e) {
-                ratingList.innerHTML = `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
+                console.warn('⚠️ Ошибка рейтинга:', e);
+                ratingList.innerHTML =
+                    `<div class="rating-item">🏆 ${state.user.name} - ${state.user.rating} ⭐</div>`;
             }
         }
 
         // ============================================
-        // 14. ИГРОВОЙ ЦИКЛ
+        // 13. ИГРОВОЙ ЦИКЛ
         // ============================================
         let gameLoopInterval = null;
 
         function startGameLoop() {
             if (gameLoopInterval) clearInterval(gameLoopInterval);
+
             function updateStats() {
-                // ⭐ УМЕНЬШАЕМ И ОКРУГЛЯЕМ ⭐
                 state.pet.hunger = clamp(state.pet.hunger - 2, 0, 100);
                 state.pet.energy = clamp(state.pet.energy - 1.5, 0, 100);
                 state.pet.mood = clamp(state.pet.mood - 1, 0, 100);
                 state.pet.health = clamp(state.pet.health - 0.5, 0, 100);
-                
+
                 if (state.pet.health <= 0) {
                     showNotification('💀 Питомец умер! Восстановление...', 'error');
                     state.pet.health = 50;
@@ -1169,24 +1334,28 @@
                     state.pet.hunger = 50;
                     state.user.coins = Math.max(0, state.user.coins - 20);
                 }
+
                 if (Math.random() < 0.05) {
                     state.user.coins += randomInt(1, 3);
                 }
+
                 state.user.totalPlayTime += 5;
                 saveGame();
                 updateUI();
             }
+
             setTimeout(updateStats, 1000);
             gameLoopInterval = setInterval(updateStats, 5000);
         }
 
         // ============================================
-        // 15. БОНУСЫ
+        // 14. ЕЖЕДНЕВНЫЙ БОНУС
         // ============================================
         function checkDailyBonus() {
             const now = Date.now();
             const lastLogin = state.user.lastLogin || 0;
             const dayMs = 86400000;
+
             if (now - lastLogin > dayMs) {
                 const streak = (now - lastLogin < dayMs * 2) ? (state.user.loginStreak || 0) + 1 : 1;
                 state.user.loginStreak = streak;
@@ -1202,22 +1371,30 @@
         }
 
         // ============================================
-        // 16. УВЕДОМЛЕНИЯ
+        // 15. УВЕДОМЛЕНИЯ
         // ============================================
         function showNotification(message, type = 'info') {
             console.log('📢', message);
+
             if (tg?.showPopup) {
-                tg.showPopup({ title: '🐾 Тамагочи', message: message, buttons: [{ type: 'ok' }] });
+                tg.showPopup({
+                    title: '🐾 Тамагочи',
+                    message: message,
+                    buttons: [{ type: 'ok' }]
+                });
                 return;
             }
+
             const container = document.getElementById('notificationContainer');
             if (!container) return;
+
             const types = {
                 success: { icon: '✅' },
                 error: { icon: '❌' },
                 warning: { icon: '⚠️' },
                 info: { icon: '📢' }
             };
+
             const t = types[type] || types.info;
             const notification = document.createElement('div');
             notification.className = 'notification';
@@ -1227,6 +1404,7 @@
                 <span class="close" onclick="this.parentElement.remove()">×</span>
             `;
             container.appendChild(notification);
+
             setTimeout(() => {
                 if (notification.parentElement) {
                     notification.style.opacity = '0';
@@ -1237,7 +1415,7 @@
         }
 
         // ============================================
-        // 17. СОХРАНЕНИЕ
+        // 16. СОХРАНЕНИЕ
         // ============================================
         async function saveGame() {
             try {
@@ -1253,12 +1431,14 @@
         async function loadGame() {
             await checkConnection();
             const loaded = await loadFromSupabase();
+
             if (!loaded) {
                 try {
                     const local = localStorage.getItem('tamagochi_save');
                     if (local) {
                         const data = JSON.parse(local);
                         Object.assign(state, data);
+                        console.log('📂 Загружено из локального кэша');
                     }
                 } catch (e) {
                     console.error('❌ Ошибка локальной загрузки:', e);
@@ -1268,7 +1448,7 @@
         }
 
         // ============================================
-        // 18. НАСТРОЙКИ
+        // 17. НАСТРОЙКИ
         // ============================================
         function setupNavigation() {
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -1289,10 +1469,16 @@
             const playBtn = document.getElementById('playBtn');
             const healBtn = document.getElementById('healBtn');
             const sleepBtn = document.getElementById('sleepBtn');
-            if (feedBtn) feedBtn.addEventListener('click', (e) => { e.preventDefault(); feedPet(); });
-            if (playBtn) playBtn.addEventListener('click', (e) => { e.preventDefault(); playPet(); });
-            if (healBtn) healBtn.addEventListener('click', (e) => { e.preventDefault(); healPet(); });
-            if (sleepBtn) sleepBtn.addEventListener('click', (e) => { e.preventDefault(); sleepPet(); });
+
+            if (feedBtn) feedBtn.addEventListener('click', (e) => { e.preventDefault();
+                feedPet(); });
+            if (playBtn) playBtn.addEventListener('click', (e) => { e.preventDefault();
+                playPet(); });
+            if (healBtn) healBtn.addEventListener('click', (e) => { e.preventDefault();
+                healPet(); });
+            if (sleepBtn) sleepBtn.addEventListener('click', (e) => { e.preventDefault();
+                sleepPet(); });
+
             document.querySelectorAll('.item').forEach(el => {
                 el.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -1300,6 +1486,8 @@
                     if (type) buyItem(type);
                 });
             });
+
+            console.log('✅ Кнопки настроены');
         }
 
         function setupTelegramTheme() {
@@ -1316,14 +1504,14 @@
         }
 
         // ============================================
-        // 19. ИНИЦИАЛИЗАЦИЯ
+        // 18. ИНИЦИАЛИЗАЦИЯ
         // ============================================
         async function init() {
             console.log('🚀 Инициализация...');
-            
+
             security = new SmartSecurity();
             window.security = security;
-            
+
             await checkConnection();
             await loadGame();
             updateUI();
@@ -1347,10 +1535,11 @@
                 настроение: state.pet.mood,
                 сытость: state.pet.hunger
             });
+            console.log('🛡️ Статус защиты:', security.getStatus());
         }
 
         // ============================================
-        // 20. ГЛОБАЛЬНЫЙ ДОСТУП
+        // 19. ГЛОБАЛЬНЫЙ ДОСТУП
         // ============================================
         window.feedPet = feedPet;
         window.playPet = playPet;
@@ -1366,8 +1555,15 @@
 
         window.addEventListener('beforeunload', () => saveGame());
 
-        document.addEventListener('DOMContentLoaded', init);
-        console.log('📦 Приложение загружено');
+        // ============================================
+        // 20. ЗАПУСК
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM загружен');
+            init();
+        });
+
+        console.log('📦 Приложение загружено (Полная исправленная версия)');
     </script>
 </body>
 </html>
