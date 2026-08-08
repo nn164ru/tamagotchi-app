@@ -157,41 +157,120 @@ const validateGameData = (data) => {
 };
 
 // ============================================
-// 9. ОБНОВЛЕНИЕ UI
+// 9. ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ)
 // ============================================
 const updateUI = () => {
     const { pet, user } = state;
     
-    // Питомец
+    // 1. Питомец
     if (elements.petEmoji) elements.petEmoji.textContent = pet.emoji;
     if (elements.petName) elements.petName.textContent = pet.name;
     if (elements.petStatus) elements.petStatus.textContent = getPetStatus();
     
-    // Бары
+    // 2. Бары
     const bars = [
-        { el: elements.healthBar, val: pet.health },
-        { el: elements.energyBar, val: pet.energy },
-        { el: elements.moodBar, val: pet.mood },
-        { el: elements.hungerBar, val: pet.hunger }
+        { el: elements.healthBar, val: pet.health, id: 'healthBar' },
+        { el: elements.energyBar, val: pet.energy, id: 'energyBar' },
+        { el: elements.moodBar, val: pet.mood, id: 'moodBar' },
+        { el: elements.hungerBar, val: pet.hunger, id: 'hungerBar' }
     ];
-    bars.forEach(({ el, val }) => {
-        if (el) {
+    
+    bars.forEach(({ el, val, id }) => {
+        const element = el || document.getElementById(id);
+        if (element) {
             const v = Math.round(clamp(val, 0, 100));
-            el.style.width = v + '%';
-            el.textContent = v + '%';
-            el.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
+            element.style.width = v + '%';
+            element.textContent = v + '%';
+            element.style.background = v > 70 ? '#4CAF50' : v > 40 ? '#FFA726' : '#f44336';
         }
     });
     
-    // Информация
+    // 3. Информация пользователя
     if (elements.userName) elements.userName.textContent = user.name;
     if (elements.userLevel) elements.userLevel.textContent = `Уровень ${pet.level}`;
     
-    // Валюта
-    const coins = Math.floor(user.coins || 0);
-    const diamonds = Math.floor(user.diamonds || 0);
-    if (elements.coins) elements.coins.textContent = `🪙 ${formatNumber(coins)}`;
-    if (elements.diamonds) elements.diamonds.textContent = `💎 ${formatNumber(diamonds)}`;
+    // 4. ⭐ ВАЛЮТА (ГЛАВНОЕ ИСПРАВЛЕНИЕ) ⭐
+    updateCurrencyDisplay();
+};
+
+// ============================================
+// 9.1 ОБНОВЛЕНИЕ ВАЛЮТЫ (НОВАЯ ФУНКЦИЯ)
+// ============================================
+const updateCurrencyDisplay = () => {
+    // Получаем элементы (с проверкой)
+    let coinsEl = elements.coins || document.getElementById('coins');
+    let diamondsEl = elements.diamonds || document.getElementById('diamonds');
+    
+    // Если элементы не найдены - пробуем найти через querySelector
+    if (!coinsEl) {
+        coinsEl = document.querySelector('.currency span:first-child');
+        if (coinsEl) elements.coins = coinsEl;
+    }
+    if (!diamondsEl) {
+        diamondsEl = document.querySelector('.currency span:last-child');
+        if (diamondsEl) elements.diamonds = diamondsEl;
+    }
+    
+    // Если всё ещё не найдены - создаем
+    if (!coinsEl || !diamondsEl) {
+        console.warn('⚠️ Элементы валюты не найдены, создаем...');
+        createCurrencyElements();
+        coinsEl = document.getElementById('coins');
+        diamondsEl = document.getElementById('diamonds');
+    }
+    
+    // Обновляем значения
+    const coins = Math.floor(state.user.coins || 0);
+    const diamonds = Math.floor(state.user.diamonds || 0);
+    
+    if (coinsEl) {
+        coinsEl.textContent = `🪙 ${formatNumber(coins)}`;
+        console.log('🪙 Монеты обновлены:', coins);
+    }
+    if (diamondsEl) {
+        diamondsEl.textContent = `💎 ${formatNumber(diamonds)}`;
+        console.log('💎 Алмазы обновлены:', diamonds);
+    }
+};
+
+// ============================================
+// 9.2 СОЗДАНИЕ ЭЛЕМЕНТОВ ВАЛЮТЫ
+// ============================================
+const createCurrencyElements = () => {
+    const header = document.getElementById('header');
+    if (!header) {
+        console.error('❌ Header не найден');
+        return;
+    }
+    
+    // Ищем или создаем контейнер валюты
+    let currencyContainer = header.querySelector('.currency');
+    if (!currencyContainer) {
+        currencyContainer = document.createElement('div');
+        currencyContainer.className = 'currency';
+        header.appendChild(currencyContainer);
+    }
+    
+    // Создаем элементы
+    if (!document.getElementById('coins')) {
+        const coinsSpan = document.createElement('span');
+        coinsSpan.id = 'coins';
+        coinsSpan.textContent = '🪙 0';
+        currencyContainer.appendChild(coinsSpan);
+        console.log('✅ Создан #coins');
+    }
+    
+    if (!document.getElementById('diamonds')) {
+        const diamondsSpan = document.createElement('span');
+        diamondsSpan.id = 'diamonds';
+        diamondsSpan.textContent = '💎 0';
+        currencyContainer.appendChild(diamondsSpan);
+        console.log('✅ Создан #diamonds');
+    }
+    
+    // Обновляем ссылки
+    elements.coins = document.getElementById('coins');
+    elements.diamonds = document.getElementById('diamonds');
 };
 
 // ============================================
@@ -292,7 +371,7 @@ const addExp = (amount) => {
 };
 
 // ============================================
-// 13. МАГАЗИН (ОПТИМИЗИРОВАННЫЙ)
+// 13. МАГАЗИН (ИСПРАВЛЕННЫЙ)
 // ============================================
 const buyItem = (type) => {
     const price = SHOP_PRICES[type];
@@ -304,6 +383,7 @@ const buyItem = (type) => {
     const coins = Math.floor(state.user.coins);
     const diamonds = Math.floor(state.user.diamonds);
     
+    // Проверка средств
     if (price.coins > 0 && coins < price.coins) {
         showNotification(`❌ Нужно ${price.coins} монет, у вас ${coins}`);
         return;
@@ -313,18 +393,25 @@ const buyItem = (type) => {
         return;
     }
     
+    // Списание
     state.user.coins = Math.max(0, coins - price.coins);
     state.user.diamonds = Math.max(0, diamonds - price.diamonds);
     
+    // Выдача товара
     if (type === 'skin') {
         changePetSkin();
     } else {
         state.inventory[type] = (state.inventory[type] || 0) + 1;
     }
     
-    updateUI();
+    // ⭐ ОБНОВЛЕНИЕ (ВАЖНО) ⭐
+    updateUI();              // Обновляет всё
+    updateCurrencyDisplay(); // Дополнительное обновление валюты
     saveGame();
+    
+    // Уведомление
     showNotification(`✅ Куплено: ${price.emoji} ${price.name}! Осталось: 🪙${state.user.coins}`);
+    console.log(`🛒 Покупка: ${type} (${price.coins} монет) → Осталось: ${state.user.coins}`);
 };
 
 const changePetSkin = () => {
