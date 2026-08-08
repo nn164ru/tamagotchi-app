@@ -407,7 +407,7 @@ function changePetSkin() {
 // 15. РЕФЕРАЛЬНАЯ СИСТЕМА
 // ============================================
 function generateReferralLink() {
-    const link = `https://t.me/YourBotUsername?start=ref_${state.user.id}`;
+    const link = `https://t.me/nnvtamagochi_bot?start=ref_${state.user.id}`;
     const refLink = document.getElementById('refLink');
     if (refLink) refLink.textContent = link;
     return link;
