@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🐾 Тамагочи</title>
+    
+    <!-- ⭐ ПОДКЛЮЧЕНИЕ TELEGRAM WebApp (ОБЯЗАТЕЛЬНО) ⭐ -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     
@@ -19,6 +22,18 @@
                 return false;
             }
         });
+        
+        // ⭐ ПРОВЕРКА TELEGRAM WebApp ⭐
+        window.onload = function() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                console.log('✅ Telegram WebApp инициализирован');
+                console.log('👤 Пользователь:', tg.initDataUnsafe?.user);
+            } else {
+                console.warn('⚠️ Telegram WebApp не найден, работаем в веб-режиме');
+            }
+        };
     </script>
 </head>
 <body>
@@ -26,7 +41,7 @@
         <!-- Верхняя панель -->
         <header id="header">
             <div class="user-info">
-                <span id="userName">Гость</span>
+                <span id="userName">Загрузка...</span>
                 <span id="userLevel">Уровень 1</span>
             </div>
             <div class="currency">
@@ -42,7 +57,7 @@
                 <div class="pet-container">
                     <div id="petEmoji">🐣</div>
                     <div id="petName">Питомец</div>
-                    <div id="petStatus">Счастлив</div>
+                    <div id="petStatus">Загрузка...</div>
                 </div>
                 <div class="stats">
                     <div class="stat">
@@ -97,9 +112,7 @@
             <section id="ratingSection">
                 <h2>🏆 Рейтинг</h2>
                 <div id="ratingList">
-                    <div class="rating-item">1. Игрок1 - 1000 очков</div>
-                    <div class="rating-item">2. Игрок2 - 900 очков</div>
-                    <div class="rating-item">3. Игрок3 - 800 очков</div>
+                    <div class="rating-item">Загрузка рейтинга...</div>
                 </div>
             </section>
 
@@ -144,7 +157,8 @@
         </nav>
     </div>
 
-    <script src="security.js"></script>
-    <script src="app.js"></script>
+    <!-- Подключение скриптов -->
+    <script type="module" src="supabase.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
