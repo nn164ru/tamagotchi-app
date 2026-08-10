@@ -24,18 +24,25 @@
     <!-- ПРИЛОЖЕНИЕ -->
     <div id="app">
         <!-- HEADER -->
-        <header id="header">
-            <div class="user-info">
-                <span id="userName">Загрузка...</span>
-                <span id="userLevel">Уровень 1</span>
+        <!-- Верхняя панель -->
+<header id="header">
+    <div class="user-info">
+        <span id="userName">Загрузка...</span>
+        <span id="userLevel">Уровень 1</span>
+        <!-- ⭐ НОВЫЙ ПРОГРЕСС УРОВНЯ ⭐ -->
+        <div class="level-progress">
+            <div class="level-progress-bar">
+                <div id="levelProgress" style="width: 0%"></div>
             </div>
-            <div class="currency">
-                <span id="coins">🪙 0</span>
-                <span id="diamonds">💎 0</span>
-                <span id="statusDot" class="status-dot offline"></span>
-            </div>
-        </header>
-
+            <span id="expDisplay">0 / 100</span>
+        </div>
+    </div>
+    <div class="currency">
+        <span id="coins">🪙 0</span>
+        <span id="diamonds">💎 0</span>
+        <span id="statusDot" class="status-dot offline"></span>
+    </div>
+</header>
         <!-- MAIN CONTENT -->
         <main id="mainContent">
             <!-- PET -->
