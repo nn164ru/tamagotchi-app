@@ -218,7 +218,7 @@ function resetGame() {
 }
 
 // ============================================
-// ОБНОВЛЕНИЕ UI (С ПРОГРЕССОМ УРОВНЯ)
+// ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 // ============================================
 function updateUI() {
     const pet = state.pet;
@@ -282,12 +282,17 @@ function updateUI() {
 
     // Рефералы
     updateReferralUI();
+    
+    // ⭐ СТАТУС БАЗЫ ДАННЫХ (ИСПРАВЛЕНО) ⭐
     updateStatusDot();
 }
 
+// ============================================
+// СТАТУС ПОДКЛЮЧЕНИЯ К БАЗЕ
+// ============================================
 function updateStatusDot() {
     if (el.statusDot) {
-        if (db.connected) {
+        if (db && db.connected) {
             el.statusDot.className = 'status-dot online';
         } else {
             el.statusDot.className = 'status-dot offline';
