@@ -226,17 +226,14 @@ function updateUI() {
 
     // Имя пользователя
     if (el.userName) el.userName.textContent = user.name || 'Гость';
-    
-    // Уровень
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
 
-    // ⭐ ПРОГРЕСС УРОВНЯ ⭐
+    // Прогресс уровня
     if (el.levelProgress && el.expDisplay) {
         const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
         el.levelProgress.style.width = progress + '%';
         el.expDisplay.textContent = `${Math.floor(pet.exp)} / ${Math.floor(pet.expToNext)}`;
         
-        // Меняем цвет прогресса
         if (progress > 70) {
             el.levelProgress.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
         } else if (progress > 40) {
@@ -251,7 +248,7 @@ function updateUI() {
     if (el.petName) el.petName.textContent = pet.name;
     if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
-    // Бары характеристик
+    // Бары
     const bars = [
         { id: 'healthBar', value: pet.health },
         { id: 'energyBar', value: pet.energy },
@@ -265,7 +262,7 @@ function updateUI() {
             const v = Math.round(Math.max(0, Math.min(100, bar.value)));
             elBar.style.width = v + '%';
             elBar.textContent = v + '%';
-
+            
             if (v > 70) {
                 elBar.style.background = 'linear-gradient(90deg, #66BB6A, #4CAF50)';
             } else if (v > 40) {
@@ -283,23 +280,19 @@ function updateUI() {
     // Рефералы
     updateReferralUI();
     
-    // ⭐ СТАТУС БАЗЫ ДАННЫХ (ИСПРАВЛЕНО) ⭐
-    updateStatusDot();
-}
-
-// ============================================
-// СТАТУС ПОДКЛЮЧЕНИЯ К БАЗЕ
-// ============================================
-function updateStatusDot() {
+    // Обновляем статус подключения
     if (el.statusDot) {
-        if (db && db.connected) {
-            el.statusDot.className = 'status-dot online';
-        } else {
+        try {
+            if (db && db.connected) {
+                el.statusDot.className = 'status-dot online';
+            } else {
+                el.statusDot.className = 'status-dot offline';
+            }
+        } catch (e) {
             el.statusDot.className = 'status-dot offline';
         }
     }
 }
-
 // ============================================
 // 8. ДЕЙСТВИЯ С ПИТОМЦЕМ
 // ============================================
