@@ -87,7 +87,7 @@ window.unlockGame = () => {
 // ============================================
 const $ = (id) => document.getElementById(id);
 const el = {
-    petEmoji: $('petEmoji'),
+   petEmoji: $('petEmoji'),
     petName: $('petName'),
     petStatus: $('petStatus'),
     healthBar: $('healthBar'),
@@ -103,7 +103,10 @@ const el = {
     refCount: $('refCount'),
     refEarned: $('refEarned'),
     referralListContainer: $('referralListContainer'),
-    statusDot: $('statusDot')
+    statusDot: $('statusDot'),
+    // ⭐ НОВЫЕ ЭЛЕМЕНТЫ ⭐
+    levelProgress: $('levelProgress'),
+    expDisplay: $('expDisplay')
 };
 
 // ============================================
