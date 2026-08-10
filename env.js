@@ -1,0 +1,6 @@
+// env.js 
+export const ENV = {
+    SUPABASE_URL: 'https://wkprlyzvjbxlymweykca.supabase.co',
+    SUPABASE_KEY: 'sb_publishable_hR0wJtsFk5wNNHiF-npb9w_4SQ9t4bP',
+    BOT_USERNAME: 'nnvtamagochi_bot'
+};
