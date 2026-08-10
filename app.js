@@ -2,12 +2,19 @@
 // APP.JS - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
-import { CONFIG } from './config.js';
-import { SecurityModule } from './security.js';
-import { db } from './database.js';
+console.log('🚀 Загрузка app.js...');
 
 // ============================================
-// 1. TELEGRAM WEBAPP
+// 1. ИМПОРТЫ
+// ============================================
+import { CONFIG } from './config.js';
+import { db } from './database.js';
+import { SecurityModule } from './security.js';
+
+console.log('✅ Импорты загружены');
+
+// ============================================
+// 2. TELEGRAM WEBAPP
 // ============================================
 const tg = window.Telegram.WebApp;
 if (tg) tg.expand();
@@ -17,8 +24,10 @@ const userData = tg?.initDataUnsafe?.user || {
     first_name: 'Гость'
 };
 
+console.log('👤 Пользователь:', userData.first_name);
+
 // ============================================
-// 2. СОСТОЯНИЕ ИГРЫ
+// 3. СОСТОЯНИЕ ИГРЫ
 // ============================================
 const state = {
     pet: {
@@ -55,11 +64,15 @@ const state = {
     _version: '2.0'
 };
 
+console.log('📊 Состояние создано');
+
 // ============================================
-// 3. БЕЗОПАСНОСТЬ
+// 4. БЕЗОПАСНОСТЬ
 // ============================================
 const security = new SecurityModule();
+console.log('🛡️ Защита создана');
 
+// Глобальные функции для security
 window.showSecurityOverlay = (message) => {
     const overlay = document.getElementById('securityOverlay');
     const msg = document.getElementById('securityMessage');
@@ -82,7 +95,7 @@ window.unlockGame = () => {
 };
 
 // ============================================
-// 4. DOM ЭЛЕМЕНТЫ
+// 5. DOM ЭЛЕМЕНТЫ
 // ============================================
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -107,8 +120,14 @@ const el = {
     expDisplay: $('expDisplay')
 };
 
+console.log('🔍 DOM элементы:', {
+    userName: el.userName ? '✅' : '❌',
+    coins: el.coins ? '✅' : '❌',
+    levelProgress: el.levelProgress ? '✅' : '❌'
+});
+
 // ============================================
-// 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================
 function clamp(val, min, max) {
     return Math.round(Math.max(min, Math.min(max, val)));
@@ -138,7 +157,7 @@ function getPetStatus() {
 }
 
 // ============================================
-// 6. СТАТУС ПОДКЛЮЧЕНИЯ К БАЗЕ
+// 7. СТАТУС ПОДКЛЮЧЕНИЯ
 // ============================================
 function updateStatusDot() {
     if (!el.statusDot) return;
@@ -155,7 +174,7 @@ function updateStatusDot() {
 }
 
 // ============================================
-// 7. РАБОТА С БАЗОЙ ДАННЫХ
+// 8. РАБОТА С БАЗОЙ
 // ============================================
 async function loadGame() {
     console.log('📂 Загрузка данных...');
@@ -233,7 +252,7 @@ function resetGame() {
 }
 
 // ============================================
-// 8. ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ)
+// 9. ОБНОВЛЕНИЕ UI (С ПРОГРЕССОМ УРОВНЯ)
 // ============================================
 function updateUI() {
     const pet = state.pet;
@@ -243,7 +262,7 @@ function updateUI() {
     if (el.userName) el.userName.textContent = user.name || 'Гость';
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
 
-    // Прогресс уровня
+    // ⭐ ПРОГРЕСС УРОВНЯ ⭐
     if (el.levelProgress && el.expDisplay) {
         const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
         el.levelProgress.style.width = progress + '%';
@@ -300,7 +319,7 @@ function updateUI() {
 }
 
 // ============================================
-// 9. ДЕЙСТВИЯ С ПИТОМЦЕМ
+// 10. ДЕЙСТВИЯ С ПИТОМЦЕМ
 // ============================================
 function secureAction(action, callback, requireItem = null) {
     if (!security) {
@@ -380,7 +399,7 @@ function sleepPet() {
 }
 
 // ============================================
-// 10. СИСТЕМА УРОВНЕЙ
+// 11. СИСТЕМА УРОВНЕЙ
 // ============================================
 function addExp(amount) {
     state.pet.exp += amount;
@@ -401,7 +420,6 @@ function levelUp() {
 
     showNotification(`🎉 Уровень ${state.pet.level}! +🪙${bonusCoins} +💎${bonusDiamonds}`, 'success');
     
-    // Анимация прогресса
     if (el.levelProgress) {
         el.levelProgress.classList.add('level-up-flash');
         setTimeout(() => {
@@ -414,7 +432,7 @@ function levelUp() {
 }
 
 // ============================================
-// 11. МАГАЗИН
+// 12. МАГАЗИН
 // ============================================
 function buyItem(type) {
     const price = CONFIG.SHOP_PRICES[type];
@@ -464,7 +482,7 @@ function changePetSkin() {
 }
 
 // ============================================
-// 12. РЕФЕРАЛЫ
+// 13. РЕФЕРАЛЫ
 // ============================================
 function generateReferralLink() {
     const link = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${state.user.id}`;
@@ -551,7 +569,7 @@ function applyReferral(refId) {
 }
 
 // ============================================
-// 13. РЕЙТИНГ
+// 14. РЕЙТИНГ
 // ============================================
 async function updateRating() {
     const { pet, user } = state;
@@ -637,9 +655,6 @@ async function updateRatingList() {
                     <span>👤 ${state.user.name} (Вы)</span>
                     <span class="score">${state.user.rating || 0} ⭐</span>
                 </div>
-                <div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:14px;">
-                    📡 Нет данных для рейтинга
-                </div>
             `;
         }
 
@@ -650,15 +665,12 @@ async function updateRatingList() {
                 <span>👤 ${state.user.name} (Вы)</span>
                 <span class="score">${state.user.rating || 0} ⭐</span>
             </div>
-            <div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:14px;">
-                📡 Рейтинг временно недоступен
-            </div>
         `;
     }
 }
 
 // ============================================
-// 14. ИГРОВОЙ ЦИКЛ
+// 15. ИГРОВОЙ ЦИКЛ
 // ============================================
 let gameLoopInterval = null;
 
@@ -694,7 +706,7 @@ function startGameLoop() {
 }
 
 // ============================================
-// 15. ЕЖЕДНЕВНЫЙ БОНУС
+// 16. ЕЖЕДНЕВНЫЙ БОНУС
 // ============================================
 function checkDailyBonus() {
     const now = Date.now();
@@ -719,7 +731,7 @@ function checkDailyBonus() {
 }
 
 // ============================================
-// 16. УВЕДОМЛЕНИЯ
+// 17. УВЕДОМЛЕНИЯ
 // ============================================
 function showNotification(message, type = 'info') {
     console.log('📢', message);
@@ -763,7 +775,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ============================================
-// 17. НАСТРОЙКИ
+// 18. НАСТРОЙКИ
 // ============================================
 function setupNavigation() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -819,7 +831,7 @@ function setupTelegramTheme() {
 }
 
 // ============================================
-// 18. ИНИЦИАЛИЗАЦИЯ
+// 19. ИНИЦИАЛИЗАЦИЯ
 // ============================================
 async function init() {
     console.log('🚀 Инициализация...');
@@ -840,7 +852,6 @@ async function init() {
     checkDailyBonus();
     await updateRating();
 
-    // Автосохранение
     setInterval(() => {
         saveGame();
         console.log('💾 Автосохранение...');
@@ -864,7 +875,7 @@ async function init() {
 }
 
 // ============================================
-// 19. ГЛОБАЛЬНЫЙ ДОСТУП
+// 20. ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
 window.playPet = playPet;
@@ -884,7 +895,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ============================================
-// 20. ЗАПУСК
+// 21. ЗАПУСК
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM загружен');
