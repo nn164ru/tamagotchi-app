@@ -4,12 +4,10 @@
 
 // ⭐ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ⭐
 export const CONFIG = {
-    // Supabase
-    SUPABASE_URL: 'https://wkprlyzvjbxlymweykca.supabase.co',
-    SUPABASE_KEY: 'sb_publishable_hR0wJtsFk5wNNHiF-npb9w_4SQ9t4bP',
-    
-    // Telegram Bot
-    BOT_USERNAME: 'nnvtamagochi_bot',
+    // Берем значения из переменных окружения
+    SUPABASE_URL: process.env.SUPABASE_URL || '',
+    SUPABASE_KEY: process.env.SUPABASE_KEY || '',
+    BOT_USERNAME: process.env.BOT_USERNAME || '',
     
     // Настройки игры
     MAX_ACTIONS_PER_MINUTE: 20,
