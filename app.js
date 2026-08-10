@@ -218,15 +218,33 @@ function resetGame() {
 }
 
 // ============================================
-// 7. ОБНОВЛЕНИЕ UI
+// ОБНОВЛЕНИЕ UI (С ПРОГРЕССОМ УРОВНЯ)
 // ============================================
 function updateUI() {
     const pet = state.pet;
     const user = state.user;
 
-    // Имя и уровень
+    // Имя пользователя
     if (el.userName) el.userName.textContent = user.name || 'Гость';
+    
+    // Уровень
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
+
+    // ⭐ ПРОГРЕСС УРОВНЯ ⭐
+    if (el.levelProgress && el.expDisplay) {
+        const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
+        el.levelProgress.style.width = progress + '%';
+        el.expDisplay.textContent = `${Math.floor(pet.exp)} / ${Math.floor(pet.expToNext)}`;
+        
+        // Меняем цвет прогресса
+        if (progress > 70) {
+            el.levelProgress.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+        } else if (progress > 40) {
+            el.levelProgress.style.background = 'linear-gradient(90deg, #FFA726, #FF9800)';
+        } else {
+            el.levelProgress.style.background = 'linear-gradient(90deg, #EF5350, #f44336)';
+        }
+    }
 
     // Питомец
     if (el.petEmoji) el.petEmoji.textContent = pet.emoji;
@@ -264,6 +282,7 @@ function updateUI() {
 
     // Рефералы
     updateReferralUI();
+    updateStatusDot();
 }
 
 function updateStatusDot() {
@@ -352,24 +371,30 @@ function sleepPet() {
 }
 
 // ============================================
-// 9. СИСТЕМА УРОВНЕЙ
+// ПОВЫШЕНИЕ УРОВНЯ (С АНИМАЦИЕЙ)
 // ============================================
-function addExp(amount) {
-    state.pet.exp += amount;
-    while (state.pet.exp >= state.pet.expToNext) {
-        state.pet.level++;
-        state.pet.exp -= state.pet.expToNext;
-        state.pet.expToNext = Math.floor(state.pet.expToNext * 1.5);
+function levelUp() {
+    state.pet.level++;
+    state.pet.exp -= state.pet.expToNext;
+    state.pet.expToNext = Math.floor(state.pet.expToNext * 1.5);
 
-        const bonusCoins = CONFIG.LEVEL_BONUS.coins + (state.pet.level - 1) * CONFIG.LEVEL_BONUS.coinsPerLevel;
-        const bonusDiamonds = CONFIG.LEVEL_BONUS.diamonds + Math.floor((state.pet.level - 1) / CONFIG.LEVEL_BONUS.diamondsPerLevel);
-        state.user.coins += bonusCoins;
-        state.user.diamonds += bonusDiamonds;
+    const bonusCoins = CONFIG.LEVEL_BONUS.coins + (state.pet.level - 1) * CONFIG.LEVEL_BONUS.coinsPerLevel;
+    const bonusDiamonds = CONFIG.LEVEL_BONUS.diamonds + Math.floor((state.pet.level - 1) / CONFIG.LEVEL_BONUS.diamondsPerLevel);
+    state.user.coins += bonusCoins;
+    state.user.diamonds += bonusDiamonds;
 
-        showNotification(`🎉 Уровень ${state.pet.level}! +🪙${bonusCoins} +💎${bonusDiamonds}`, 'success');
-        saveGame();
-        updateUI();
+    showNotification(`🎉 Уровень ${state.pet.level}! +🪙${bonusCoins} +💎${bonusDiamonds}`, 'success');
+    
+    // ⭐ АНИМАЦИЯ ПРОГРЕССА ⭐
+    if (el.levelProgress) {
+        el.levelProgress.classList.add('level-up-flash');
+        setTimeout(() => {
+            el.levelProgress.classList.remove('level-up-flash');
+        }, 1000);
     }
+    
+    saveGame();
+    updateUI();
 }
 
 // ============================================
