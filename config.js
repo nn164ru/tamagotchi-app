@@ -2,12 +2,13 @@
 // CONFIG.JS - КОНФИГУРАЦИЯ ПРИЛОЖЕНИЯ
 // ============================================
 
+import { ENV } from './env.js';
 // ⭐ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ⭐
 export const CONFIG = {
     // Берем значения из переменных окружения
-    SUPABASE_URL: process.env.SUPABASE_URL || '',
-    SUPABASE_KEY: process.env.SUPABASE_KEY || '',
-    BOT_USERNAME: process.env.BOT_USERNAME || '',
+    SUPABASE_URL: ENV.SUPABASE_URL || '',
+    SUPABASE_KEY: ENV.SUPABASE_KEY || '',
+    BOT_USERNAME: ENV.BOT_USERNAME || '',
     
     // Настройки игры
     MAX_ACTIONS_PER_MINUTE: 20,
