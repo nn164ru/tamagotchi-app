@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - ОСНОВНАЯ ЛОГИКА ИГРЫ
+// APP.JS - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
 import { CONFIG } from './config.js';
@@ -60,7 +60,6 @@ const state = {
 // ============================================
 const security = new SecurityModule();
 
-// Глобальные функции для security.js
 window.showSecurityOverlay = (message) => {
     const overlay = document.getElementById('securityOverlay');
     const msg = document.getElementById('securityMessage');
@@ -73,7 +72,7 @@ window.showSecurityOverlay = (message) => {
 window.unlockGame = () => {
     const overlay = document.getElementById('securityOverlay');
     if (overlay) overlay.classList.remove('active');
-    security.unlock();
+    if (security) security.unlock();
     document.querySelectorAll('button, .item').forEach(el => {
         el.disabled = false;
         el.style.opacity = '1';
@@ -87,7 +86,7 @@ window.unlockGame = () => {
 // ============================================
 const $ = (id) => document.getElementById(id);
 const el = {
-   petEmoji: $('petEmoji'),
+    petEmoji: $('petEmoji'),
     petName: $('petName'),
     petStatus: $('petStatus'),
     healthBar: $('healthBar'),
@@ -104,7 +103,6 @@ const el = {
     refEarned: $('refEarned'),
     referralListContainer: $('referralListContainer'),
     statusDot: $('statusDot'),
-    // ⭐ НОВЫЕ ЭЛЕМЕНТЫ ⭐
     levelProgress: $('levelProgress'),
     expDisplay: $('expDisplay')
 };
@@ -140,21 +138,38 @@ function getPetStatus() {
 }
 
 // ============================================
-// 6. РАБОТА С БАЗОЙ ДАННЫХ
+// 6. СТАТУС ПОДКЛЮЧЕНИЯ К БАЗЕ
+// ============================================
+function updateStatusDot() {
+    if (!el.statusDot) return;
+    
+    try {
+        if (db && db.connected) {
+            el.statusDot.className = 'status-dot online';
+        } else {
+            el.statusDot.className = 'status-dot offline';
+        }
+    } catch (e) {
+        el.statusDot.className = 'status-dot offline';
+    }
+}
+
+// ============================================
+// 7. РАБОТА С БАЗОЙ ДАННЫХ
 // ============================================
 async function loadGame() {
     console.log('📂 Загрузка данных...');
 
-    // Проверяем подключение
-    await db.initConnection();
-    updateStatusDot();
+    if (db) {
+        await db.initConnection();
+        updateStatusDot();
 
-    // Загружаем из базы
-    const dbData = await db.loadPlayer(state.user.id);
-    if (dbData) {
-        Object.assign(state, dbData);
-        console.log('✅ Данные загружены из базы');
-        return true;
+        const dbData = await db.loadPlayer(state.user.id);
+        if (dbData) {
+            Object.assign(state, dbData);
+            console.log('✅ Данные загружены из базы');
+            return true;
+        }
     }
 
     console.log('ℹ️ Создаем нового игрока');
@@ -165,7 +180,7 @@ async function loadGame() {
 async function saveGame() {
     state._timestamp = Date.now();
 
-    if (db.connected) {
+    if (db && db.connected) {
         const result = await db.savePlayer(state.user.id, state);
         if (result) {
             updateStatusDot();
@@ -218,7 +233,7 @@ function resetGame() {
 }
 
 // ============================================
-// ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+// 8. ОБНОВЛЕНИЕ UI (ИСПРАВЛЕННОЕ)
 // ============================================
 function updateUI() {
     const pet = state.pet;
@@ -248,7 +263,7 @@ function updateUI() {
     if (el.petName) el.petName.textContent = pet.name;
     if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
-    // Бары
+    // Бары характеристик
     const bars = [
         { id: 'healthBar', value: pet.health },
         { id: 'energyBar', value: pet.energy },
@@ -262,7 +277,7 @@ function updateUI() {
             const v = Math.round(Math.max(0, Math.min(100, bar.value)));
             elBar.style.width = v + '%';
             elBar.textContent = v + '%';
-            
+
             if (v > 70) {
                 elBar.style.background = 'linear-gradient(90deg, #66BB6A, #4CAF50)';
             } else if (v > 40) {
@@ -280,23 +295,19 @@ function updateUI() {
     // Рефералы
     updateReferralUI();
     
-    // Обновляем статус подключения
-    if (el.statusDot) {
-        try {
-            if (db && db.connected) {
-                el.statusDot.className = 'status-dot online';
-            } else {
-                el.statusDot.className = 'status-dot offline';
-            }
-        } catch (e) {
-            el.statusDot.className = 'status-dot offline';
-        }
-    }
+    // Статус базы
+    updateStatusDot();
 }
+
 // ============================================
-// 8. ДЕЙСТВИЯ С ПИТОМЦЕМ
+// 9. ДЕЙСТВИЯ С ПИТОМЦЕМ
 // ============================================
 function secureAction(action, callback, requireItem = null) {
+    if (!security) {
+        showNotification('❌ Система безопасности не активна', 'error');
+        return false;
+    }
+
     if (security.isLocked) {
         showNotification('⛔ Доступ заблокирован', 'error');
         return false;
@@ -369,8 +380,15 @@ function sleepPet() {
 }
 
 // ============================================
-// ПОВЫШЕНИЕ УРОВНЯ (С АНИМАЦИЕЙ)
+// 10. СИСТЕМА УРОВНЕЙ
 // ============================================
+function addExp(amount) {
+    state.pet.exp += amount;
+    while (state.pet.exp >= state.pet.expToNext) {
+        levelUp();
+    }
+}
+
 function levelUp() {
     state.pet.level++;
     state.pet.exp -= state.pet.expToNext;
@@ -383,7 +401,7 @@ function levelUp() {
 
     showNotification(`🎉 Уровень ${state.pet.level}! +🪙${bonusCoins} +💎${bonusDiamonds}`, 'success');
     
-    // ⭐ АНИМАЦИЯ ПРОГРЕССА ⭐
+    // Анимация прогресса
     if (el.levelProgress) {
         el.levelProgress.classList.add('level-up-flash');
         setTimeout(() => {
@@ -396,7 +414,7 @@ function levelUp() {
 }
 
 // ============================================
-// 10. МАГАЗИН
+// 11. МАГАЗИН
 // ============================================
 function buyItem(type) {
     const price = CONFIG.SHOP_PRICES[type];
@@ -405,7 +423,7 @@ function buyItem(type) {
         return;
     }
 
-    if (security.isLocked) {
+    if (security && security.isLocked) {
         showNotification('⛔ Доступ заблокирован', 'error');
         return;
     }
@@ -446,7 +464,7 @@ function changePetSkin() {
 }
 
 // ============================================
-// 11. РЕФЕРАЛЬНАЯ СИСТЕМА
+// 12. РЕФЕРАЛЫ
 // ============================================
 function generateReferralLink() {
     const link = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${state.user.id}`;
@@ -533,7 +551,7 @@ function applyReferral(refId) {
 }
 
 // ============================================
-// 12. РЕЙТИНГ
+// 13. РЕЙТИНГ
 // ============================================
 async function updateRating() {
     const { pet, user } = state;
@@ -547,7 +565,7 @@ async function updateRating() {
 
     if (user.rating !== newRating) {
         user.rating = newRating;
-        if (db.connected) {
+        if (db && db.connected) {
             await db.updateRating(user.id, newRating);
         }
         saveGame();
@@ -561,9 +579,11 @@ async function updateRatingList() {
     if (!ratingList) return;
 
     try {
-        const data = await db.getTopPlayers(50);
+        let data = [];
+        if (db && db.connected) {
+            data = await db.getTopPlayers(50) || [];
+        }
 
-        // Создаем карту игроков
         const playersMap = new Map();
 
         if (data && data.length > 0) {
@@ -578,7 +598,6 @@ async function updateRatingList() {
             });
         }
 
-        // Добавляем текущего игрока
         const currentKey = state.user.id || state.user.name;
         if (!playersMap.has(currentKey)) {
             playersMap.set(currentKey, {
@@ -618,6 +637,9 @@ async function updateRatingList() {
                     <span>👤 ${state.user.name} (Вы)</span>
                     <span class="score">${state.user.rating || 0} ⭐</span>
                 </div>
+                <div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:14px;">
+                    📡 Нет данных для рейтинга
+                </div>
             `;
         }
 
@@ -636,7 +658,7 @@ async function updateRatingList() {
 }
 
 // ============================================
-// 13. ИГРОВОЙ ЦИКЛ
+// 14. ИГРОВОЙ ЦИКЛ
 // ============================================
 let gameLoopInterval = null;
 
@@ -672,7 +694,7 @@ function startGameLoop() {
 }
 
 // ============================================
-// 14. ЕЖЕДНЕВНЫЙ БОНУС
+// 15. ЕЖЕДНЕВНЫЙ БОНУС
 // ============================================
 function checkDailyBonus() {
     const now = Date.now();
@@ -697,7 +719,7 @@ function checkDailyBonus() {
 }
 
 // ============================================
-// 15. УВЕДОМЛЕНИЯ
+// 16. УВЕДОМЛЕНИЯ
 // ============================================
 function showNotification(message, type = 'info') {
     console.log('📢', message);
@@ -741,7 +763,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ============================================
-// 16. НАСТРОЙКИ ИНТЕРФЕЙСА
+// 17. НАСТРОЙКИ
 // ============================================
 function setupNavigation() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -797,13 +819,17 @@ function setupTelegramTheme() {
 }
 
 // ============================================
-// 17. ИНИЦИАЛИЗАЦИЯ
+// 18. ИНИЦИАЛИЗАЦИЯ
 // ============================================
 async function init() {
     console.log('🚀 Инициализация...');
 
-    await loadGame();
+    if (db) {
+        await db.initConnection();
+        updateStatusDot();
+    }
 
+    await loadGame();
     updateUI();
     setupNavigation();
     setupButtons();
@@ -820,7 +846,6 @@ async function init() {
         console.log('💾 Автосохранение...');
     }, CONFIG.AUTO_SAVE_INTERVAL);
 
-    // Обработка реферальной ссылки
     const startParam = tg?.initDataUnsafe?.start_param;
     if (startParam && startParam.startsWith('ref_')) {
         setTimeout(() => applyReferral(startParam.replace('ref_', '')), 1000);
@@ -835,12 +860,11 @@ async function init() {
         настроение: state.pet.mood,
         сытость: state.pet.hunger
     });
-    console.log('🛡️ Статус защиты:', security.getStatus());
-    console.log('☁️ База данных:', db.connected ? '✅ Подключена' : '⚠️ Офлайн');
+    console.log('☁️ База данных:', db && db.connected ? '✅ Подключена' : '⚠️ Офлайн');
 }
 
 // ============================================
-// 18. ГЛОБАЛЬНЫЙ ДОСТУП
+// 19. ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
 window.playPet = playPet;
@@ -860,7 +884,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ============================================
-// 19. ЗАПУСК
+// 20. ЗАПУСК
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM загружен');
