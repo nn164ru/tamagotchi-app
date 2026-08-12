@@ -1,13 +1,17 @@
 // ============================================
-// DATABASE.JS - РАБОТА С БАЗОЙ ДАННЫХ
+// DATABASE.JS - РАБОТА С SUPABASE
 // ============================================
 
 import { CONFIG } from './config.js';
 
-// Создаем клиент Supabase
+// Проверяем, что Supabase загружен
+if (typeof window.supabase === 'undefined') {
+    console.error('❌ Supabase не загружен! Проверьте подключение скрипта.');
+}
+
 const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
-class DatabaseManager {
+export class DatabaseManager {
     constructor() {
         this.supabase = supabase;
         this.table = 'players';
@@ -15,32 +19,20 @@ class DatabaseManager {
         this.initConnection();
     }
 
-    // ============================================
-    // ПРОВЕРКА ПОДКЛЮЧЕНИЯ
-    // ============================================
     async initConnection() {
         try {
             const { error } = await this.supabase
                 .from(this.table)
                 .select('count')
                 .limit(1);
-
-            if (!error) {
-                this.connected = true;
-                console.log('✅ Supabase подключен');
-            } else {
-                this.connected = false;
-                console.warn('⚠️ Supabase не доступен');
-            }
+            this.connected = !error;
+            console.log(this.connected ? '✅ Supabase подключен' : '⚠️ Supabase не доступен');
         } catch (e) {
             this.connected = false;
             console.warn('⚠️ Ошибка подключения к Supabase');
         }
     }
 
-    // ============================================
-    // ЗАГРУЗКА ДАННЫХ
-    // ============================================
     async loadPlayer(userId) {
         try {
             const { data, error } = await this.supabase
@@ -56,21 +48,13 @@ class DatabaseManager {
                 }
                 throw error;
             }
-
-            if (data) {
-                console.log('✅ Данные загружены из базы');
-                return this.convertData(data);
-            }
-            return null;
+            return data ? this.convertData(data) : null;
         } catch (e) {
             console.error('❌ Ошибка загрузки:', e);
             return null;
         }
     }
 
-    // ============================================
-    // СОХРАНЕНИЕ ДАННЫХ
-    // ============================================
     async savePlayer(userId, state) {
         try {
             const saveData = {
@@ -96,7 +80,6 @@ class DatabaseManager {
                 last_login: state.user.lastLogin || Date.now(),
                 inventory: state.inventory,
                 _timestamp: Date.now(),
-                _version: '2.0',
                 updated_at: new Date().toISOString()
             };
 
@@ -105,7 +88,7 @@ class DatabaseManager {
                 .upsert(saveData, { onConflict: 'user_id' });
 
             if (error) throw error;
-            console.log('✅ Данные сохранены в базу');
+            console.log('✅ Данные сохранены');
             return true;
         } catch (e) {
             console.error('❌ Ошибка сохранения:', e);
@@ -113,9 +96,6 @@ class DatabaseManager {
         }
     }
 
-    // ============================================
-    // КОНВЕРТАЦИЯ ДАННЫХ
-    // ============================================
     convertData(data) {
         return {
             pet: {
@@ -147,9 +127,6 @@ class DatabaseManager {
         };
     }
 
-    // ============================================
-    // РЕЙТИНГ
-    // ============================================
     async getTopPlayers(limit = 50) {
         try {
             const { data, error } = await this.supabase
@@ -157,52 +134,26 @@ class DatabaseManager {
                 .select('user_name, rating, level, coins, user_id')
                 .order('rating', { ascending: false })
                 .limit(limit);
-
             if (error) throw error;
             return data || [];
         } catch (e) {
-            console.error('❌ Ошибка загрузки рейтинга:', e);
+            console.error('❌ Ошибка рейтинга:', e);
             return [];
         }
     }
 
-    // ============================================
-    // ОБНОВЛЕНИЕ РЕЙТИНГА
-    // ============================================
     async updateRating(userId, rating) {
         try {
             const { error } = await this.supabase
                 .from(this.table)
-                .update({ rating: rating })
+                .update({ rating })
                 .eq('user_id', userId);
-
-            if (error) throw error;
-            return true;
+            return !error;
         } catch (e) {
             console.error('❌ Ошибка обновления рейтинга:', e);
             return false;
         }
     }
-
-    // ============================================
-    // РЕФЕРАЛЫ
-    // ============================================
-    async addReferral(referrerId, newUserId) {
-        try {
-            // Обновляем рефералов у пригласившего
-            const { error } = await this.supabase.rpc('add_referral', {
-                referrer_id: referrerId,
-                new_user_id: newUserId
-            });
-
-            if (error) throw error;
-            return true;
-        } catch (e) {
-            console.error('❌ Ошибка добавления реферала:', e);
-            return false;
-        }
-    }
 }
 
-// Создаем и экспортируем экземпляр
 export const db = new DatabaseManager();
