@@ -226,6 +226,11 @@ function updateUI() {
     if (el.userName) el.userName.textContent = user.name || 'Гость';
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
 
+    // ⭐ ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ ЗДОРОВЬЯ ⭐
+    // Это гарантированно будет уменьшать здоровье при каждом обновлении UI
+    state.pet.health = Math.max(0, state.pet.health - 0.1);
+    state.pet.health = Math.round(state.pet.health * 10) / 10;
+    
     // Прогресс уровня
     if (el.levelProgress && el.expDisplay) {
         const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
