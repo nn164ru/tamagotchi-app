@@ -1,5 +1,5 @@
 // ============================================
-// DATABASE.JS - РАБОТА С SUPABASE
+// DATABASE.JS - РАБОТА ТОЛЬКО С SUPABASE
 // ============================================
 
 import { CONFIG } from './config.js';
@@ -21,20 +21,39 @@ export class DatabaseManager {
 
     async initConnection() {
         try {
-            const { error } = await this.supabase
+            console.log('🔄 Проверка подключения к Supabase...');
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
+            );
+            
+            const connectionPromise = this.supabase
                 .from(this.table)
                 .select('count')
                 .limit(1);
+            
+            await Promise.race([connectionPromise, timeoutPromise]);
+            
+            const { error } = await connectionPromise;
             this.connected = !error;
+            
             console.log(this.connected ? '✅ Supabase подключен' : '⚠️ Supabase не доступен');
+            
+            if (!this.connected) {
+                console.warn('⚠️ Ошибка подключения:', error);
+            }
         } catch (e) {
             this.connected = false;
-            console.warn('⚠️ Ошибка подключения к Supabase');
+            console.warn('⚠️ Ошибка подключения к Supabase:', e.message);
         }
     }
 
     async loadPlayer(userId) {
         try {
+            if (!this.connected) {
+                throw new Error('Нет подключения к Supabase');
+            }
+
             const { data, error } = await this.supabase
                 .from(this.table)
                 .select('*')
@@ -51,12 +70,16 @@ export class DatabaseManager {
             return data ? this.convertData(data) : null;
         } catch (e) {
             console.error('❌ Ошибка загрузки:', e);
-            return null;
+            throw e;
         }
     }
 
     async savePlayer(userId, state) {
         try {
+            if (!this.connected) {
+                throw new Error('Нет подключения к Supabase');
+            }
+
             const saveData = {
                 user_id: userId,
                 user_name: state.user.name,
@@ -88,11 +111,11 @@ export class DatabaseManager {
                 .upsert(saveData, { onConflict: 'user_id' });
 
             if (error) throw error;
-            console.log('✅ Данные сохранены');
+            console.log('✅ Данные сохранены в Supabase');
             return true;
         } catch (e) {
             console.error('❌ Ошибка сохранения:', e);
-            return false;
+            throw e;
         }
     }
 
@@ -129,6 +152,10 @@ export class DatabaseManager {
 
     async getTopPlayers(limit = 50) {
         try {
+            if (!this.connected) {
+                throw new Error('Нет подключения к Supabase');
+            }
+
             const { data, error } = await this.supabase
                 .from(this.table)
                 .select('user_name, rating, level, coins, user_id')
@@ -138,12 +165,16 @@ export class DatabaseManager {
             return data || [];
         } catch (e) {
             console.error('❌ Ошибка рейтинга:', e);
-            return [];
+            throw e;
         }
     }
 
     async updateRating(userId, rating) {
         try {
+            if (!this.connected) {
+                throw new Error('Нет подключения к Supabase');
+            }
+
             const { error } = await this.supabase
                 .from(this.table)
                 .update({ rating })
@@ -151,7 +182,47 @@ export class DatabaseManager {
             return !error;
         } catch (e) {
             console.error('❌ Ошибка обновления рейтинга:', e);
-            return false;
+            throw e;
+        }
+    }
+
+    async createNewPlayer(userId, userName) {
+        try {
+            const newData = {
+                user_id: userId,
+                user_name: userName || 'Гость',
+                pet_name: 'Питомец',
+                pet_emoji: '🐣',
+                health: 100,
+                energy: 100,
+                mood: 100,
+                hunger: 100,
+                level: 1,
+                exp: 0,
+                exp_to_next: 100,
+                coins: 100,
+                diamonds: 10,
+                rating: 0,
+                referrals: 0,
+                referral_earned: 0,
+                referral_list: [],
+                total_play_time: 0,
+                login_streak: 1,
+                last_login: Date.now(),
+                inventory: { food: 2, toy: 1, medicine: 1, skins: ['🐣'] },
+                _timestamp: Date.now()
+            };
+
+            const { error } = await this.supabase
+                .from(this.table)
+                .insert(newData);
+
+            if (error) throw error;
+            console.log('✅ Новый игрок создан в Supabase');
+            return this.convertData(newData);
+        } catch (e) {
+            console.error('❌ Ошибка создания игрока:', e);
+            throw e;
         }
     }
 }
