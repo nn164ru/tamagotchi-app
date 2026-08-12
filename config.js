@@ -2,13 +2,12 @@
 // CONFIG.JS - КОНФИГУРАЦИЯ ПРИЛОЖЕНИЯ
 // ============================================
 
-import { ENV } from './env.js';
-// ⭐ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ⭐
+// ⭐ ВСТАВЬТЕ СВОИ ДАННЫЕ ⭐
 export const CONFIG = {
-    // Берем значения из переменных окружения
-    SUPABASE_URL: ENV.SUPABASE_URL || '',
-    SUPABASE_KEY: ENV.SUPABASE_KEY || '',
-    BOT_USERNAME: ENV.BOT_USERNAME || '',
+    // Supabase
+    SUPABASE_URL: 'https://wkprlyzvjbxlymweykca.supabase.co',
+    SUPABASE_KEY: 'sb_publishable_hR0wJtsFk5wNNHiF-npb9w_4SQ9t4bP',
+    BOT_USERNAME: 'nnvtamagochi_bot',
     
     // Настройки игры
     MAX_ACTIONS_PER_MINUTE: 20,
@@ -37,7 +36,7 @@ export const CONFIG = {
     // Скины
     SKINS: ['🐣', '🐥', '🐔', '🦆', '🐦', '🐧', '🐤', '🦅', '🦉', '🦜'],
     
-    // Уровни опыта
+    // Опыт за действия
     EXP_PER_ACTION: {
         feed: 10,
         play: 15,
@@ -45,7 +44,7 @@ export const CONFIG = {
         sleep: 8
     },
     
-    // Уменьшение характеристик
+    // Уменьшение характеристик (за 5 секунд)
     DECREASE_RATE: {
         hunger: 2,
         energy: 1.5,
