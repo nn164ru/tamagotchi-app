@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - ОСНОВНАЯ ЛОГИКА ИГРЫ
+// APP.JS - ОСНОВНАЯ ЛОГИКА ИГРЫ (ТОЛЬКО SUPABASE)
 // ============================================
 
 import { CONFIG } from './config.js';
@@ -18,6 +18,8 @@ const userData = tg?.initDataUnsafe?.user || {
     id: 'guest_' + Date.now().toString(36),
     first_name: 'Гость'
 };
+
+console.log('👤 Пользователь:', userData.first_name);
 
 // ============================================
 // 2. СОСТОЯНИЕ
@@ -54,7 +56,6 @@ const state = {
         skins: ['🐣']
     },
     _timestamp: Date.now(),
-    // ⭐ ДЛЯ УВЕДОМЛЕНИЙ ⭐
     notifications: {
         healthNotified: false,
         hungerNotified: false,
@@ -65,7 +66,6 @@ const state = {
     }
 };
 
-// Делаем глобальным для отладки
 window.state = state;
 
 // ============================================
@@ -156,7 +156,7 @@ function updateStatusDot() {
 }
 
 // ============================================
-// 6. УВЕДОМЛЕНИЯ О ХАРАКТЕРИСТИКАХ
+// 6. УВЕДОМЛЕНИЯ
 // ============================================
 function resetNotificationFlags() {
     state.notifications.healthNotified = false;
@@ -299,74 +299,72 @@ function checkPetStats() {
 }
 
 // ============================================
-// 7. БАЗА ДАННЫХ
+// 7. РАБОТА С БАЗОЙ (ТОЛЬКО SUPABASE)
 // ============================================
 async function loadGame() {
-    console.log('📂 Загрузка данных...');
-    if (db) {
-        await db.initConnection();
-        updateStatusDot();
-        const dbData = await db.loadPlayer(state.user.id);
-        if (dbData) {
-            Object.assign(state, dbData);
-            console.log('✅ Данные загружены из базы');
+    console.log('📂 Загрузка данных из Supabase...');
+    
+    try {
+        // Проверяем подключение
+        if (!db.connected) {
+            await db.initConnection();
+        }
+        
+        if (!db.connected) {
+            throw new Error('Нет подключения к Supabase');
+        }
+        
+        // Загружаем данные
+        let playerData = await db.loadPlayer(state.user.id);
+        
+        if (!playerData) {
+            // Создаем нового игрока
+            console.log('ℹ️ Создаем нового игрока в Supabase...');
+            playerData = await db.createNewPlayer(state.user.id, state.user.name);
+        }
+        
+        if (playerData) {
+            Object.assign(state, playerData);
+            console.log('✅ Данные загружены из Supabase');
+            
+            // Обновляем время последнего входа
+            state.user.lastLogin = Date.now();
+            await saveGame();
+            
             return true;
         }
+        
+        throw new Error('Не удалось загрузить или создать игрока');
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        showNotification('⚠️ Ошибка подключения к серверу. Проверьте интернет.', 'error');
+        throw error;
     }
-    console.log('ℹ️ Создаем нового игрока');
-    resetGame();
-    return true;
 }
 
 async function saveGame() {
     state._timestamp = Date.now();
-    if (db && db.connected) {
-        const result = await db.savePlayer(state.user.id, state);
-        if (result) {
-            updateStatusDot();
-            return true;
+    
+    try {
+        if (!db.connected) {
+            await db.initConnection();
         }
+        
+        if (!db.connected) {
+            throw new Error('Нет подключения к Supabase');
+        }
+        
+        await db.savePlayer(state.user.id, state);
+        updateStatusDot();
+        console.log('💾 Данные сохранены в Supabase');
+        return true;
+    } catch (e) {
+        console.error('❌ Ошибка сохранения:', e);
+        updateStatusDot();
+        showNotification('⚠️ Ошибка сохранения. Проверьте интернет.', 'error');
+        return false;
     }
-    updateStatusDot();
-    return false;
-}
-
-function resetGame() {
-    const userId = state.user?.id || 'guest_' + Date.now().toString(36);
-    const userName = state.user?.name || 'Гость';
-    state.pet = {
-        name: 'Питомец',
-        emoji: '🐣',
-        health: 100,
-        energy: 100,
-        mood: 100,
-        hunger: 100,
-        level: 1,
-        exp: 0,
-        expToNext: 100
-    };
-    state.user = {
-        id: userId,
-        name: userName,
-        coins: 100,
-        diamonds: 10,
-        rating: 0,
-        referrals: 0,
-        referralEarned: 0,
-        referralList: [],
-        totalPlayTime: 0,
-        lastLogin: Date.now(),
-        loginStreak: 1
-    };
-    state.inventory = {
-        food: 2,
-        toy: 1,
-        medicine: 1,
-        skins: ['🐣']
-    };
-    state._timestamp = Date.now();
-    resetNotificationFlags();
-    saveGame();
 }
 
 // ============================================
@@ -382,7 +380,6 @@ function calculateOfflineProgress() {
     const minutesOffline = Math.floor(timeOffline / 60000);
     const secondsOffline = Math.floor(timeOffline / 1000);
     
-    // Медленное уменьшение (в 10 раз медленнее)
     const decreasePerSecond = {
         health: 0.01,
         energy: 0.03,
@@ -395,7 +392,6 @@ function calculateOfflineProgress() {
     state.pet.mood = Math.max(0, state.pet.mood - secondsOffline * decreasePerSecond.mood);
     state.pet.hunger = Math.max(0, state.pet.hunger - secondsOffline * decreasePerSecond.hunger);
     
-    // Округляем
     state.pet.health = Math.round(state.pet.health * 10) / 10;
     state.pet.energy = Math.round(state.pet.energy * 10) / 10;
     state.pet.mood = Math.round(state.pet.mood * 10) / 10;
@@ -778,13 +774,13 @@ async function updateRatingList() {
 }
 
 // ============================================
-// 15. ИГРОВОЙ ЦИКЛ (С УВЕДОМЛЕНИЯМИ)
+// 15. ИГРОВОЙ ЦИКЛ
 // ============================================
 let gameLoopInterval = null;
 
 function startGameLoop() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
-    console.log('🔄 Игровой цикл запущен (медленный)');
+    console.log('🔄 Игровой цикл запущен');
 
     function updateStats() {
         state.pet.hunger = Math.max(0, state.pet.hunger - CONFIG.DECREASE_RATE.hunger);
@@ -933,52 +929,78 @@ function setupTelegramTheme() {
 async function init() {
     console.log('🚀 Инициализация...');
 
-    if (db) {
+    try {
+        // Подключаемся к Supabase
+        console.log('🔄 Проверка Supabase...');
         await db.initConnection();
         updateStatusDot();
+
+        if (!db.connected) {
+            throw new Error('Не удалось подключиться к Supabase');
+        }
+
+        // Загружаем данные
+        await loadGame();
+        
+        // Расчет оффлайн-времени
+        calculateOfflineProgress();
+        
+        // Обновляем UI
+        updateUI();
+        
+        // Настройки
+        setupNavigation();
+        setupButtons();
+        generateReferralLink();
+        setupTelegramTheme();
+
+        // Запускаем игровой цикл
+        startGameLoop();
+        
+        // Проверяем бонусы
+        checkDailyBonus();
+        
+        // Обновляем рейтинг
+        await updateRating();
+
+        // Автосохранение
+        setInterval(() => {
+            saveGame();
+        }, CONFIG.AUTO_SAVE_INTERVAL);
+
+        // Обработка реферальной ссылки
+        const startParam = tg?.initDataUnsafe?.start_param;
+        if (startParam && startParam.startsWith('ref_')) {
+            setTimeout(() => applyReferral(startParam.replace('ref_', '')), 1000);
+        }
+
+        console.log('✅ Игра запущена!');
+        console.log('📊 Прогресс:', {
+            уровень: state.pet.level,
+            монет: state.user.coins,
+            здоровье: state.pet.health,
+            энергия: state.pet.energy,
+            настроение: state.pet.mood,
+            сытость: state.pet.hunger
+        });
+        console.log('☁️ База данных:', db.connected ? '✅ Подключена' : '⚠️ Офлайн');
+
+    } catch (error) {
+        console.error('❌ Ошибка инициализации:', error);
+        showNotification('⚠️ Ошибка подключения к серверу. Проверьте интернет.', 'error');
+        
+        // Показываем кнопку перезагрузки
+        const overlay = document.getElementById('securityOverlay');
+        if (overlay) {
+            overlay.classList.add('active');
+            document.getElementById('securityMessage').textContent = 
+                'Не удалось подключиться к серверу. Проверьте интернет и нажмите "Перезагрузить"';
+            document.querySelector('#securityOverlay .btn').textContent = '🔄 Перезагрузить';
+            document.querySelector('#securityOverlay .btn').onclick = () => {
+                location.reload();
+            };
+        }
     }
-
-    await loadGame();
-    
-    // ⭐ РАСЧЕТ ОФФЛАЙН-ВРЕМЕНИ ⭐
-    calculateOfflineProgress();
-    
-    updateUI();
-    setupNavigation();
-    setupButtons();
-    generateReferralLink();
-    setupTelegramTheme();
-
-    startGameLoop();
-    checkDailyBonus();
-    await updateRating();
-
-    setInterval(() => {
-        saveGame();
-        console.log('💾 Автосохранение...');
-    }, CONFIG.AUTO_SAVE_INTERVAL);
-
-    const startParam = tg?.initDataUnsafe?.start_param;
-    if (startParam && startParam.startsWith('ref_')) {
-        setTimeout(() => applyReferral(startParam.replace('ref_', '')), 1000);
-    }
-
-    console.log('✅ Игра запущена!');
-    console.log('📊 Прогресс:', {
-        уровень: state.pet.level,
-        монет: state.user.coins,
-        здоровье: state.pet.health,
-        энергия: state.pet.energy,
-        настроение: state.pet.mood,
-        сытость: state.pet.hunger
-    });
-    console.log('☁️ База данных:', db && db.connected ? '✅ Подключена' : '⚠️ Офлайн');
-
-    window.startGameLoop = startGameLoop;
-    window.gameLoopInterval = gameLoopInterval;
-    window.updateUI = updateUI;
-    window.clamp = clamp;
-    window.CONFIG = CONFIG;
 }
 
 // ============================================
