@@ -226,11 +226,6 @@ function updateUI() {
     if (el.userName) el.userName.textContent = user.name || 'Гость';
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
 
-    // ⭐ ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ ЗДОРОВЬЯ ⭐
-    // Это гарантированно будет уменьшать здоровье при каждом обновлении UI
-    state.pet.health = Math.max(0, state.pet.health - 0.1);
-    state.pet.health = Math.round(state.pet.health * 10) / 10;
-    
     // Прогресс уровня
     if (el.levelProgress && el.expDisplay) {
         const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
@@ -570,38 +565,39 @@ async function updateRatingList() {
 }
 
 // ============================================
-// ИГРОВОЙ ЦИКЛ (ИСПРАВЛЕННЫЙ)
+// ИГРОВОЙ ЦИКЛ (ПОЛНОСТЬЮ ПЕРЕПИСАН)
 // ============================================
-let gameLoopInterval = null;
+
+// Глобальная переменная для таймера
+let gameInterval = null;
+let healthDecreaseInterval = null;
 
 function startGameLoop() {
-    if (gameLoopInterval) clearInterval(gameLoopInterval);
-    console.log('🔄 Игровой цикл запущен');
-
-    function updateStats() {
-        // ⭐ ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ ⭐
-        // Уменьшаем все характеристики
+    console.log('🔄 ЗАПУСК ИГРОВОГО ЦИКЛА');
+    
+    // Останавливаем старые таймеры
+    if (gameInterval) clearInterval(gameInterval);
+    if (healthDecreaseInterval) clearInterval(healthDecreaseInterval);
+    
+    // ============================================
+    // 1. ОСНОВНОЙ ЦИКЛ (каждые 5 секунд)
+    // ============================================
+    gameInterval = setInterval(() => {
+        console.log('⏰ ТИК ЦИКЛА');
+        
+        // Уменьшаем характеристики
+        const oldHealth = state.pet.health;
+        
         state.pet.hunger = Math.max(0, state.pet.hunger - 2);
         state.pet.energy = Math.max(0, state.pet.energy - 1.5);
         state.pet.mood = Math.max(0, state.pet.mood - 1);
         state.pet.health = Math.max(0, state.pet.health - 0.5);
         
-        // Округляем до 1 знака для чистоты
-        state.pet.hunger = Math.round(state.pet.hunger * 10) / 10;
-        state.pet.energy = Math.round(state.pet.energy * 10) / 10;
-        state.pet.mood = Math.round(state.pet.mood * 10) / 10;
-        state.pet.health = Math.round(state.pet.health * 10) / 10;
-
-        // ⭐ ЛОГ ДЛЯ ПРОВЕРКИ ⭐
-        console.log('📉 Характеристики:', {
-            здоровье: state.pet.health,
-            энергия: state.pet.energy,
-            настроение: state.pet.mood,
-            сытость: state.pet.hunger
-        });
-
+        console.log(`❤️ Здоровье: ${oldHealth} → ${state.pet.health}`);
+        
         // Проверка на смерть
         if (state.pet.health <= 0) {
+            console.log('💀 ПИТОМЕЦ УМЕР!');
             showNotification('💀 Питомец умер! Восстановление...', 'error');
             state.pet.health = 50;
             state.pet.energy = 50;
@@ -609,24 +605,84 @@ function startGameLoop() {
             state.pet.hunger = 50;
             state.user.coins = Math.max(0, state.user.coins - 20);
         }
-
+        
         // Пассивный доход
         if (Math.random() < 0.05) {
             state.user.coins += randomInt(1, 3);
         }
-
+        
         state.user.totalPlayTime += 5;
+        
+        // ОБНОВЛЯЕМ UI
         updateUI();
         saveGame();
-    }
-
-    // Запускаем первое обновление через 1 секунду
-    setTimeout(updateStats, 1000);
+        
+        console.log('📊 После обновления:', {
+            здоровье: state.pet.health,
+            энергия: state.pet.energy,
+            настроение: state.pet.mood,
+            сытость: state.pet.hunger
+        });
+        
+    }, 5000); // Каждые 5 секунд
     
-    // Затем каждые 5 секунд
-    gameLoopInterval = setInterval(updateStats, CONFIG.GAME_LOOP_INTERVAL || 5000);
-    window.gameLoopInterval = gameLoopInterval;
+    // ============================================
+    // 2. ДОПОЛНИТЕЛЬНЫЙ ЦИКЛ (каждую секунду)
+    // ============================================
+    healthDecreaseInterval = setInterval(() => {
+        // Уменьшаем здоровье каждую секунду (для наглядности)
+        // state.pet.health = Math.max(0, state.pet.health - 0.1);
+        // updateUI();
+    }, 1000);
+    
+    console.log('✅ ИГРОВОЙ ЦИКЛ ЗАПУЩЕН');
+    
+    // Первое обновление через 1 секунду
+    setTimeout(() => {
+        console.log('🔄 ПЕРВОЕ ОБНОВЛЕНИЕ');
+        updateUI();
+    }, 1000);
 }
+
+// ============================================
+// ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ (ДЛЯ ТЕСТА)
+// ============================================
+function forceHealthDecrease() {
+    console.log('🔽 ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ');
+    state.pet.health = Math.max(0, state.pet.health - 10);
+    updateUI();
+    console.log(`❤️ Здоровье после принудительного: ${state.pet.health}`);
+    return state.pet.health;
+}
+
+// ============================================
+// ТЕСТОВАЯ ФУНКЦИЯ
+// ============================================
+function testHealth() {
+    console.log('🧪 === ТЕСТ ЗДОРОВЬЯ ===');
+    console.log('❤️ Текущее здоровье:', state.pet.health);
+    
+    // Уменьшаем на 5
+    state.pet.health = Math.max(0, state.pet.health - 5);
+    updateUI();
+    console.log('❤️ После -5:', state.pet.health);
+    
+    // Показываем полоску
+    const bar = document.getElementById('healthBar');
+    if (bar) {
+        console.log('📊 Полоска:', {
+            ширина: bar.style.width,
+            текст: bar.textContent
+        });
+    }
+    
+    return state.pet.health;
+}
+
+// Делаем функции глобальными
+window.forceHealthDecrease = forceHealthDecrease;
+window.testHealth = testHealth;
+window.startGameLoop = startGameLoop;
 
 // ============================================
 // 14. БОНУСЫ
@@ -812,29 +868,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('📦 app.js загружен');
-
-// ============================================
-// ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ ЗДОРОВЬЯ
-// ============================================
-
-// Запускаем отдельный таймер для уменьшения здоровья
-setInterval(() => {
-    // Уменьшаем здоровье на 0.5 каждые 5 секунд
-    state.pet.health = Math.max(0, state.pet.health - 0.5);
-    state.pet.health = Math.round(state.pet.health * 10) / 10;
-    
-    // Также уменьшаем остальные характеристики
-    state.pet.hunger = Math.max(0, state.pet.hunger - 2);
-    state.pet.energy = Math.max(0, state.pet.energy - 1.5);
-    state.pet.mood = Math.max(0, state.pet.mood - 1);
-    
-    // Округляем
-    state.pet.hunger = Math.round(state.pet.hunger * 10) / 10;
-    state.pet.energy = Math.round(state.pet.energy * 10) / 10;
-    state.pet.mood = Math.round(state.pet.mood * 10) / 10;
-    
-    // Обновляем UI
-    updateUI();
-    
-    console.log('💚 Принудительное обновление, здоровье:', state.pet.health);
-}, 5000);
