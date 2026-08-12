@@ -812,3 +812,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('📦 app.js загружен');
+
+// ============================================
+// ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ ЗДОРОВЬЯ
+// ============================================
+
+// Запускаем отдельный таймер для уменьшения здоровья
+setInterval(() => {
+    // Уменьшаем здоровье на 0.5 каждые 5 секунд
+    state.pet.health = Math.max(0, state.pet.health - 0.5);
+    state.pet.health = Math.round(state.pet.health * 10) / 10;
+    
+    // Также уменьшаем остальные характеристики
+    state.pet.hunger = Math.max(0, state.pet.hunger - 2);
+    state.pet.energy = Math.max(0, state.pet.energy - 1.5);
+    state.pet.mood = Math.max(0, state.pet.mood - 1);
+    
+    // Округляем
+    state.pet.hunger = Math.round(state.pet.hunger * 10) / 10;
+    state.pet.energy = Math.round(state.pet.energy * 10) / 10;
+    state.pet.mood = Math.round(state.pet.mood * 10) / 10;
+    
+    // Обновляем UI
+    updateUI();
+    
+    console.log('💚 Принудительное обновление, здоровье:', state.pet.health);
+}, 5000);
