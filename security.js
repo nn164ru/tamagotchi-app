@@ -7,11 +7,7 @@ import { CONFIG } from './config.js';
 export class SecurityModule {
     constructor() {
         this.actionLog = [];
-        this.cheatFlags = {
-            speedHack: false,
-            memoryHack: false,
-            debuggerDetected: false
-        };
+        this.cheatFlags = { speedHack: false, memoryHack: false, debuggerDetected: false };
         this.lastActionTime = {};
         this.detectionCount = 0;
         this.isLocked = false;
@@ -41,8 +37,7 @@ export class SecurityModule {
     protectEval() {
         const originalEval = window.eval;
         window.eval = function(code) {
-            if (typeof code === 'string' &&
-                (code.includes('localStorage') || code.includes('state'))) {
+            if (typeof code === 'string' && (code.includes('localStorage') || code.includes('state'))) {
                 return null;
             }
             return originalEval.call(window, code);
