@@ -565,7 +565,7 @@ async function updateRatingList() {
 }
 
 // ============================================
-// 13. ИГРОВОЙ ЦИКЛ
+// ИГРОВОЙ ЦИКЛ (ИСПРАВЛЕННЫЙ)
 // ============================================
 let gameLoopInterval = null;
 
@@ -574,11 +574,28 @@ function startGameLoop() {
     console.log('🔄 Игровой цикл запущен');
 
     function updateStats() {
-        state.pet.hunger = clamp(state.pet.hunger - CONFIG.DECREASE_RATE.hunger, 0, 100);
-        state.pet.energy = clamp(state.pet.energy - CONFIG.DECREASE_RATE.energy, 0, 100);
-        state.pet.mood = clamp(state.pet.mood - CONFIG.DECREASE_RATE.mood, 0, 100);
-        state.pet.health = clamp(state.pet.health - CONFIG.DECREASE_RATE.health, 0, 100);
+        // ⭐ ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ ⭐
+        // Уменьшаем все характеристики
+        state.pet.hunger = Math.max(0, state.pet.hunger - 2);
+        state.pet.energy = Math.max(0, state.pet.energy - 1.5);
+        state.pet.mood = Math.max(0, state.pet.mood - 1);
+        state.pet.health = Math.max(0, state.pet.health - 0.5);
+        
+        // Округляем до 1 знака для чистоты
+        state.pet.hunger = Math.round(state.pet.hunger * 10) / 10;
+        state.pet.energy = Math.round(state.pet.energy * 10) / 10;
+        state.pet.mood = Math.round(state.pet.mood * 10) / 10;
+        state.pet.health = Math.round(state.pet.health * 10) / 10;
 
+        // ⭐ ЛОГ ДЛЯ ПРОВЕРКИ ⭐
+        console.log('📉 Характеристики:', {
+            здоровье: state.pet.health,
+            энергия: state.pet.energy,
+            настроение: state.pet.mood,
+            сытость: state.pet.hunger
+        });
+
+        // Проверка на смерть
         if (state.pet.health <= 0) {
             showNotification('💀 Питомец умер! Восстановление...', 'error');
             state.pet.health = 50;
@@ -588,6 +605,7 @@ function startGameLoop() {
             state.user.coins = Math.max(0, state.user.coins - 20);
         }
 
+        // Пассивный доход
         if (Math.random() < 0.05) {
             state.user.coins += randomInt(1, 3);
         }
@@ -597,8 +615,11 @@ function startGameLoop() {
         saveGame();
     }
 
+    // Запускаем первое обновление через 1 секунду
     setTimeout(updateStats, 1000);
-    gameLoopInterval = setInterval(updateStats, CONFIG.GAME_LOOP_INTERVAL);
+    
+    // Затем каждые 5 секунд
+    gameLoopInterval = setInterval(updateStats, CONFIG.GAME_LOOP_INTERVAL || 5000);
     window.gameLoopInterval = gameLoopInterval;
 }
 
