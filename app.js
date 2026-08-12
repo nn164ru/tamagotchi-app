@@ -1,20 +1,15 @@
 // ============================================
-// APP.JS - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
+// APP.JS - ОСНОВНАЯ ЛОГИКА ИГРЫ
 // ============================================
 
-console.log('🚀 Загрузка app.js...');
-
-// ============================================
-// 1. ИМПОРТЫ
-// ============================================
 import { CONFIG } from './config.js';
 import { db } from './database.js';
 import { SecurityModule } from './security.js';
 
-console.log('✅ Импорты загружены');
+console.log('🚀 Загрузка приложения...');
 
 // ============================================
-// 2. TELEGRAM WEBAPP
+// 1. TELEGRAM
 // ============================================
 const tg = window.Telegram.WebApp;
 if (tg) tg.expand();
@@ -24,10 +19,8 @@ const userData = tg?.initDataUnsafe?.user || {
     first_name: 'Гость'
 };
 
-console.log('👤 Пользователь:', userData.first_name);
-
 // ============================================
-// 3. СОСТОЯНИЕ ИГРЫ
+// 2. СОСТОЯНИЕ
 // ============================================
 const state = {
     pet: {
@@ -60,19 +53,17 @@ const state = {
         medicine: 1,
         skins: ['🐣']
     },
-    _timestamp: Date.now(),
-    _version: '2.0'
+    _timestamp: Date.now()
 };
 
-console.log('📊 Состояние создано');
+// Делаем глобальным для отладки
+window.state = state;
 
 // ============================================
-// 4. БЕЗОПАСНОСТЬ
+// 3. БЕЗОПАСНОСТЬ
 // ============================================
 const security = new SecurityModule();
-console.log('🛡️ Защита создана');
 
-// Глобальные функции для security
 window.showSecurityOverlay = (message) => {
     const overlay = document.getElementById('securityOverlay');
     const msg = document.getElementById('securityMessage');
@@ -85,7 +76,7 @@ window.showSecurityOverlay = (message) => {
 window.unlockGame = () => {
     const overlay = document.getElementById('securityOverlay');
     if (overlay) overlay.classList.remove('active');
-    if (security) security.unlock();
+    security.unlock();
     document.querySelectorAll('button, .item').forEach(el => {
         el.disabled = false;
         el.style.opacity = '1';
@@ -95,7 +86,7 @@ window.unlockGame = () => {
 };
 
 // ============================================
-// 5. DOM ЭЛЕМЕНТЫ
+// 4. DOM
 // ============================================
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -120,14 +111,8 @@ const el = {
     expDisplay: $('expDisplay')
 };
 
-console.log('🔍 DOM элементы:', {
-    userName: el.userName ? '✅' : '❌',
-    coins: el.coins ? '✅' : '❌',
-    levelProgress: el.levelProgress ? '✅' : '❌'
-});
-
 // ============================================
-// 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 5. ВСПОМОГАТЕЛЬНЫЕ
 // ============================================
 function clamp(val, min, max) {
     return Math.round(Math.max(min, Math.min(max, val)));
@@ -156,33 +141,19 @@ function getPetStatus() {
     return '💀 Очень плохо!';
 }
 
-// ============================================
-// 7. СТАТУС ПОДКЛЮЧЕНИЯ
-// ============================================
 function updateStatusDot() {
     if (!el.statusDot) return;
-    
-    try {
-        if (db && db.connected) {
-            el.statusDot.className = 'status-dot online';
-        } else {
-            el.statusDot.className = 'status-dot offline';
-        }
-    } catch (e) {
-        el.statusDot.className = 'status-dot offline';
-    }
+    el.statusDot.className = `status-dot ${db && db.connected ? 'online' : 'offline'}`;
 }
 
 // ============================================
-// 8. РАБОТА С БАЗОЙ
+// 6. БАЗА ДАННЫХ
 // ============================================
 async function loadGame() {
     console.log('📂 Загрузка данных...');
-
     if (db) {
         await db.initConnection();
         updateStatusDot();
-
         const dbData = await db.loadPlayer(state.user.id);
         if (dbData) {
             Object.assign(state, dbData);
@@ -190,7 +161,6 @@ async function loadGame() {
             return true;
         }
     }
-
     console.log('ℹ️ Создаем нового игрока');
     resetGame();
     return true;
@@ -198,7 +168,6 @@ async function loadGame() {
 
 async function saveGame() {
     state._timestamp = Date.now();
-
     if (db && db.connected) {
         const result = await db.savePlayer(state.user.id, state);
         if (result) {
@@ -206,16 +175,13 @@ async function saveGame() {
             return true;
         }
     }
-
     updateStatusDot();
-    console.warn('⚠️ Нет подключения к базе');
     return false;
 }
 
 function resetGame() {
     const userId = state.user?.id || 'guest_' + Date.now().toString(36);
     const userName = state.user?.name || 'Гость';
-
     state.pet = {
         name: 'Питомец',
         emoji: '🐣',
@@ -247,27 +213,24 @@ function resetGame() {
         skins: ['🐣']
     };
     state._timestamp = Date.now();
-
     saveGame();
 }
 
 // ============================================
-// 9. ОБНОВЛЕНИЕ UI (С ПРОГРЕССОМ УРОВНЯ)
+// 7. UI
 // ============================================
 function updateUI() {
     const pet = state.pet;
     const user = state.user;
 
-    // Имя пользователя
     if (el.userName) el.userName.textContent = user.name || 'Гость';
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
 
-    // ⭐ ПРОГРЕСС УРОВНЯ ⭐
+    // Прогресс уровня
     if (el.levelProgress && el.expDisplay) {
         const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
         el.levelProgress.style.width = progress + '%';
         el.expDisplay.textContent = `${Math.floor(pet.exp)} / ${Math.floor(pet.expToNext)}`;
-        
         if (progress > 70) {
             el.levelProgress.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
         } else if (progress > 40) {
@@ -277,12 +240,11 @@ function updateUI() {
         }
     }
 
-    // Питомец
     if (el.petEmoji) el.petEmoji.textContent = pet.emoji;
     if (el.petName) el.petName.textContent = pet.name;
     if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
-    // Бары характеристик
+    // Бары
     const bars = [
         { id: 'healthBar', value: pet.health },
         { id: 'energyBar', value: pet.energy },
@@ -293,10 +255,9 @@ function updateUI() {
     bars.forEach(bar => {
         const elBar = document.getElementById(bar.id);
         if (elBar) {
-            const v = Math.round(Math.max(0, Math.min(100, bar.value)));
+            const v = Math.round(clamp(bar.value, 0, 100));
             elBar.style.width = v + '%';
             elBar.textContent = v + '%';
-
             if (v > 70) {
                 elBar.style.background = 'linear-gradient(90deg, #66BB6A, #4CAF50)';
             } else if (v > 40) {
@@ -307,27 +268,18 @@ function updateUI() {
         }
     });
 
-    // Валюта
     if (el.coins) el.coins.textContent = `🪙 ${formatNumber(Math.floor(user.coins))}`;
     if (el.diamonds) el.diamonds.textContent = `💎 ${formatNumber(Math.floor(user.diamonds))}`;
 
-    // Рефералы
     updateReferralUI();
-    
-    // Статус базы
     updateStatusDot();
 }
 
 // ============================================
-// 10. ДЕЙСТВИЯ С ПИТОМЦЕМ
+// 8. ДЕЙСТВИЯ
 // ============================================
 function secureAction(action, callback, requireItem = null) {
-    if (!security) {
-        showNotification('❌ Система безопасности не активна', 'error');
-        return false;
-    }
-
-    if (security.isLocked) {
+    if (!security || security.isLocked) {
         showNotification('⛔ Доступ заблокирован', 'error');
         return false;
     }
@@ -399,7 +351,7 @@ function sleepPet() {
 }
 
 // ============================================
-// 11. СИСТЕМА УРОВНЕЙ
+// 9. УРОВНИ
 // ============================================
 function addExp(amount) {
     state.pet.exp += amount;
@@ -419,20 +371,12 @@ function levelUp() {
     state.user.diamonds += bonusDiamonds;
 
     showNotification(`🎉 Уровень ${state.pet.level}! +🪙${bonusCoins} +💎${bonusDiamonds}`, 'success');
-    
-    if (el.levelProgress) {
-        el.levelProgress.classList.add('level-up-flash');
-        setTimeout(() => {
-            el.levelProgress.classList.remove('level-up-flash');
-        }, 1000);
-    }
-    
     saveGame();
     updateUI();
 }
 
 // ============================================
-// 12. МАГАЗИН
+// 10. МАГАЗИН
 // ============================================
 function buyItem(type) {
     const price = CONFIG.SHOP_PRICES[type];
@@ -482,7 +426,7 @@ function changePetSkin() {
 }
 
 // ============================================
-// 13. РЕФЕРАЛЫ
+// 11. РЕФЕРАЛЫ
 // ============================================
 function generateReferralLink() {
     const link = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${state.user.id}`;
@@ -509,15 +453,11 @@ function copyReferralLink() {
 
 function shareReferral() {
     const link = el.refLink?.textContent || generateReferralLink();
-
     if (tg?.showPopup) {
         tg.showPopup({
             title: '👥 Пригласить друга',
-            message: `Пригласи друга и получи бонус!\n\n🪙 +${CONFIG.REFERRAL_BONUS_COINS} монет\n💎 +${CONFIG.REFERRAL_BONUS_DIAMONDS} алмазов\n⭐ +${CONFIG.REFERRAL_BONUS_EXP} опыта\n\n📋 Ссылка: ${link}`,
-            buttons: [
-                { id: 'copy', type: 'default', text: '📋 Копировать' },
-                { type: 'cancel' }
-            ]
+            message: `Пригласи друга и получи бонус!\n🪙 +${CONFIG.REFERRAL_BONUS_COINS} монет\n💎 +${CONFIG.REFERRAL_BONUS_DIAMONDS} алмазов\n⭐ +${CONFIG.REFERRAL_BONUS_EXP} опыта\n\n📋 Ссылка: ${link}`,
+            buttons: [{ id: 'copy', type: 'default', text: '📋 Копировать' }, { type: 'cancel' }]
         }, (buttonId) => {
             if (buttonId === 'copy') copyReferralLink();
         });
@@ -529,21 +469,13 @@ function shareReferral() {
 function updateReferralUI() {
     if (el.refCount) el.refCount.textContent = state.user.referrals || 0;
     if (el.refEarned) el.refEarned.textContent = state.user.referralEarned || 0;
-
     if (el.referralListContainer) {
         const list = state.user.referralList || [];
-        if (list.length === 0) {
-            el.referralListContainer.innerHTML =
-                '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>';
-        } else {
-            el.referralListContainer.innerHTML = list.map((ref, i) =>
-                `<div class="referral-item">
-                    <span>${i + 1}.</span>
-                    <span>${ref.substring(0, 10)}...</span>
-                    <span>✅</span>
-                </div>`
+        el.referralListContainer.innerHTML = list.length === 0 ?
+            '<p style="color: var(--text-secondary);">👥 Пока нет приглашенных</p>' :
+            list.map((ref, i) =>
+                `<div class="referral-item"><span>${i + 1}.</span><span>${ref.substring(0, 10)}...</span><span>✅</span></div>`
             ).join('');
-        }
     }
 }
 
@@ -553,42 +485,34 @@ function applyReferral(refId) {
         showNotification('❌ Уже приглашен', 'warning');
         return;
     }
-
     state.user.referrals = (state.user.referrals || 0) + 1;
     state.user.referralEarned = (state.user.referralEarned || 0) + CONFIG.REFERRAL_BONUS_COINS;
-    state.user.coins = Math.floor(state.user.coins) + CONFIG.REFERRAL_BONUS_COINS;
-    state.user.diamonds = Math.floor(state.user.diamonds) + CONFIG.REFERRAL_BONUS_DIAMONDS;
+    state.user.coins += CONFIG.REFERRAL_BONUS_COINS;
+    state.user.diamonds += CONFIG.REFERRAL_BONUS_DIAMONDS;
     state.pet.exp += CONFIG.REFERRAL_BONUS_EXP;
-
-    if (!state.user.referralList) state.user.referralList = [];
+    state.user.referralList = state.user.referralList || [];
     state.user.referralList.push(refId);
-
     showNotification(`🎉 Реферал добавлен! +${CONFIG.REFERRAL_BONUS_COINS} монет, +${CONFIG.REFERRAL_BONUS_DIAMONDS} алмазов!`, 'success');
     saveGame();
     updateUI();
 }
 
 // ============================================
-// 14. РЕЙТИНГ
+// 12. РЕЙТИНГ
 // ============================================
 async function updateRating() {
     const { pet, user } = state;
-
     const newRating = Math.floor(
         (pet.health + pet.energy + pet.mood + pet.hunger) * 0.1 +
         pet.level * 10 +
         user.coins * 0.01 +
         user.referrals * 50
     );
-
     if (user.rating !== newRating) {
         user.rating = newRating;
-        if (db && db.connected) {
-            await db.updateRating(user.id, newRating);
-        }
+        if (db && db.connected) await db.updateRating(user.id, newRating);
         saveGame();
     }
-
     await updateRatingList();
 }
 
@@ -597,24 +521,17 @@ async function updateRatingList() {
     if (!ratingList) return;
 
     try {
-        let data = [];
-        if (db && db.connected) {
-            data = await db.getTopPlayers(50) || [];
-        }
-
+        let data = (db && db.connected) ? await db.getTopPlayers(50) : [];
         const playersMap = new Map();
-
-        if (data && data.length > 0) {
-            data.forEach(p => {
-                const key = p.user_id || p.user_name;
-                playersMap.set(key, {
-                    name: p.user_name || 'Гость',
-                    rating: p.rating || 0,
-                    level: p.level || 1,
-                    isCurrent: (p.user_name === state.user.name) || (p.user_id === state.user.id)
-                });
+        data.forEach(p => {
+            const key = p.user_id || p.user_name;
+            playersMap.set(key, {
+                name: p.user_name || 'Гость',
+                rating: p.rating || 0,
+                level: p.level || 1,
+                isCurrent: (p.user_name === state.user.name) || (p.user_id === state.user.id)
             });
-        }
+        });
 
         const currentKey = state.user.id || state.user.name;
         if (!playersMap.has(currentKey)) {
@@ -626,56 +543,35 @@ async function updateRatingList() {
             });
         }
 
-        const sortedPlayers = Array.from(playersMap.values())
+        const sorted = Array.from(playersMap.values())
             .sort((a, b) => b.rating - a.rating)
             .slice(0, 50);
 
-        if (sortedPlayers.length > 0) {
-            ratingList.innerHTML = sortedPlayers.map((player, index) => {
-                const medal = index === 0 ? '🏆' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-                const isCurrent = player.isCurrent ? ' (Вы)' : '';
-
-                let topClass = '';
-                if (index === 0) topClass = 'top1';
-                else if (index === 1) topClass = 'top2';
-                else if (index === 2) topClass = 'top3';
-
-                return `<div class="rating-item ${topClass} ${player.isCurrent ? 'current-player' : ''}">
-                    <span>
-                        <span class="medal">${medal}</span>
-                        ${player.name}${isCurrent}
-                        <span class="level-badge">Ур. ${player.level}</span>
-                    </span>
-                    <span class="score">${player.rating} ⭐</span>
+        if (sorted.length > 0) {
+            ratingList.innerHTML = sorted.map((p, i) => {
+                const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                let topClass = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+                return `<div class="rating-item ${topClass} ${p.isCurrent ? 'current-player' : ''}">
+                    <span><span class="medal">${medal}</span> ${p.name}${p.isCurrent ? ' (Вы)' : ''}<span class="level-badge">Ур. ${p.level}</span></span>
+                    <span class="score">${p.rating} ⭐</span>
                 </div>`;
             }).join('');
         } else {
-            ratingList.innerHTML = `
-                <div class="rating-item current-player">
-                    <span>👤 ${state.user.name} (Вы)</span>
-                    <span class="score">${state.user.rating || 0} ⭐</span>
-                </div>
-            `;
+            ratingList.innerHTML = `<div class="rating-item current-player"><span>👤 ${state.user.name} (Вы)</span><span class="score">${state.user.rating || 0} ⭐</span></div>`;
         }
-
     } catch (e) {
-        console.warn('⚠️ Ошибка загрузки рейтинга:', e);
-        ratingList.innerHTML = `
-            <div class="rating-item current-player">
-                <span>👤 ${state.user.name} (Вы)</span>
-                <span class="score">${state.user.rating || 0} ⭐</span>
-            </div>
-        `;
+        ratingList.innerHTML = `<div class="rating-item current-player"><span>👤 ${state.user.name} (Вы)</span><span class="score">${state.user.rating || 0} ⭐</span></div>`;
     }
 }
 
 // ============================================
-// 15. ИГРОВОЙ ЦИКЛ
+// 13. ИГРОВОЙ ЦИКЛ
 // ============================================
 let gameLoopInterval = null;
 
 function startGameLoop() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
+    console.log('🔄 Игровой цикл запущен');
 
     function updateStats() {
         state.pet.hunger = clamp(state.pet.hunger - CONFIG.DECREASE_RATE.hunger, 0, 100);
@@ -703,27 +599,24 @@ function startGameLoop() {
 
     setTimeout(updateStats, 1000);
     gameLoopInterval = setInterval(updateStats, CONFIG.GAME_LOOP_INTERVAL);
+    window.gameLoopInterval = gameLoopInterval;
 }
 
 // ============================================
-// 16. ЕЖЕДНЕВНЫЙ БОНУС
+// 14. БОНУСЫ
 // ============================================
 function checkDailyBonus() {
     const now = Date.now();
     const lastLogin = state.user.lastLogin || 0;
     const dayMs = 86400000;
-
     if (now - lastLogin > dayMs) {
         const streak = (now - lastLogin < dayMs * 2) ? (state.user.loginStreak || 0) + 1 : 1;
         state.user.loginStreak = streak;
-
         const bonusCoins = CONFIG.DAILY_BONUS_COINS + streak * 10;
         const bonusDiamonds = CONFIG.DAILY_BONUS_DIAMONDS + Math.floor(streak / 3);
-
         state.user.coins += bonusCoins;
         state.user.diamonds += bonusDiamonds;
         state.user.lastLogin = now;
-
         showNotification(`🎁 Ежедневный бонус!\n🪙 +${bonusCoins} монет\n💎 +${bonusDiamonds} алмазов\n🔥 ${streak} день подряд!`, 'success');
         saveGame();
         updateUI();
@@ -731,40 +624,25 @@ function checkDailyBonus() {
 }
 
 // ============================================
-// 17. УВЕДОМЛЕНИЯ
+// 15. УВЕДОМЛЕНИЯ
 // ============================================
 function showNotification(message, type = 'info') {
     console.log('📢', message);
-
     if (tg?.showPopup) {
-        tg.showPopup({
-            title: '🐾 Тамагочи',
-            message: message,
-            buttons: [{ type: 'ok' }]
-        });
+        tg.showPopup({ title: '🐾 Тамагочи', message, buttons: [{ type: 'ok' }] });
         return;
     }
-
     const container = document.getElementById('notificationContainer');
     if (!container) return;
-
-    const types = {
-        success: { icon: '✅' },
-        error: { icon: '❌' },
-        warning: { icon: '⚠️' },
-        info: { icon: '📢' }
-    };
-
-    const t = types[type] || types.info;
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: '📢' };
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.innerHTML = `
-        <span class="icon">${t.icon}</span>
+        <span class="icon">${icons[type] || '📢'}</span>
         <span class="text">${message}</span>
         <span class="close" onclick="this.parentElement.remove()">×</span>
     `;
     container.appendChild(notification);
-
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.opacity = '0';
@@ -775,7 +653,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ============================================
-// 18. НАСТРОЙКИ
+// 16. НАСТРОЙКИ
 // ============================================
 function setupNavigation() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -796,7 +674,6 @@ function setupButtons() {
     const playBtn = document.getElementById('playBtn');
     const healBtn = document.getElementById('healBtn');
     const sleepBtn = document.getElementById('sleepBtn');
-
     if (feedBtn) feedBtn.addEventListener('click', (e) => { e.preventDefault();
         feedPet(); });
     if (playBtn) playBtn.addEventListener('click', (e) => { e.preventDefault();
@@ -813,7 +690,6 @@ function setupButtons() {
             if (type) buyItem(type);
         });
     });
-
     console.log('✅ Кнопки настроены');
 }
 
@@ -831,7 +707,7 @@ function setupTelegramTheme() {
 }
 
 // ============================================
-// 19. ИНИЦИАЛИЗАЦИЯ
+// 17. ИНИЦИАЛИЗАЦИЯ
 // ============================================
 async function init() {
     console.log('🚀 Инициализация...');
@@ -872,10 +748,17 @@ async function init() {
         сытость: state.pet.hunger
     });
     console.log('☁️ База данных:', db && db.connected ? '✅ Подключена' : '⚠️ Офлайн');
+
+    // Делаем доступным в консоли
+    window.startGameLoop = startGameLoop;
+    window.gameLoopInterval = gameLoopInterval;
+    window.updateUI = updateUI;
+    window.clamp = clamp;
+    window.CONFIG = CONFIG;
 }
 
 // ============================================
-// 20. ГЛОБАЛЬНЫЙ ДОСТУП
+// 18. ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
 window.playPet = playPet;
@@ -895,7 +778,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ============================================
-// 21. ЗАПУСК
+// 19. ЗАПУСК
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM загружен');
