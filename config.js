@@ -44,39 +44,23 @@ export const CONFIG = {
         sleep: 8
     },
     
-    // ⭐ НОВАЯ МЕДЛЕННАЯ СКОРОСТЬ УМЕНЬШЕНИЯ ⭐
+    // Медленное уменьшение характеристик
     DECREASE_RATE: {
-        hunger: 0.5,      // Было 2
-        energy: 0.3,      // Было 1.5
-        mood: 0.2,        // Было 1
-        health: 0.1       // Было 0.5
+        hunger: 0.5,
+        energy: 0.3,
+        mood: 0.2,
+        health: 0.1
     },
     
-    // ⭐ ПОРОГИ ДЛЯ УВЕДОМЛЕНИЙ ⭐
+    // Пороги для уведомлений
     NOTIFICATION_THRESHOLDS: {
-        health: {
-            critical: 20,
-            low: 40,
-            medium: 60
-        },
-        hunger: {
-            critical: 15,
-            low: 30,
-            medium: 50
-        },
-        energy: {
-            critical: 15,
-            low: 30,
-            medium: 50
-        },
-        mood: {
-            critical: 15,
-            low: 30,
-            medium: 50
-        }
+        health: { critical: 20, low: 40, medium: 60 },
+        hunger: { critical: 15, low: 30, medium: 50 },
+        energy: { critical: 15, low: 30, medium: 50 },
+        mood: { critical: 15, low: 30, medium: 50 }
     },
     
-    // ⭐ ИНТЕРВАЛ ПРОВЕРКИ УВЕДОМЛЕНИЙ ⭐
+    // Интервал проверки уведомлений
     NOTIFICATION_CHECK_INTERVAL: 30,
     
     // Бонусы за уровень
