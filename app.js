@@ -53,7 +53,16 @@ const state = {
         medicine: 1,
         skins: ['🐣']
     },
-    _timestamp: Date.now()
+    _timestamp: Date.now(),
+    // ⭐ ДЛЯ УВЕДОМЛЕНИЙ ⭐
+    notifications: {
+        healthNotified: false,
+        hungerNotified: false,
+        energyNotified: false,
+        moodNotified: false,
+        lastHealthCheck: Date.now(),
+        lastNotification: null
+    }
 };
 
 // Делаем глобальным для отладки
@@ -147,7 +156,150 @@ function updateStatusDot() {
 }
 
 // ============================================
-// 6. БАЗА ДАННЫХ
+// 6. УВЕДОМЛЕНИЯ О ХАРАКТЕРИСТИКАХ
+// ============================================
+function resetNotificationFlags() {
+    state.notifications.healthNotified = false;
+    state.notifications.hungerNotified = false;
+    state.notifications.energyNotified = false;
+    state.notifications.moodNotified = false;
+}
+
+function checkPetStats() {
+    const health = state.pet.health;
+    const hunger = state.pet.hunger;
+    const energy = state.pet.energy;
+    const mood = state.pet.mood;
+    
+    const thresholds = CONFIG.NOTIFICATION_THRESHOLDS;
+    const now = Date.now();
+    const lastCheck = state.notifications.lastHealthCheck || now;
+    
+    if (now - lastCheck < CONFIG.NOTIFICATION_CHECK_INTERVAL * 1000) {
+        return;
+    }
+    state.notifications.lastHealthCheck = now;
+    
+    let notifications = [];
+    
+    // Проверка здоровья
+    if (health < thresholds.health.critical) {
+        notifications.push({
+            type: 'critical',
+            icon: '🚨',
+            title: 'КРИТИЧЕСКОЕ ЗДОРОВЬЕ!',
+            message: `Здоровье питомца ${Math.round(health)}%! Срочно вылечите его!`,
+            level: 'critical'
+        });
+        state.notifications.healthNotified = true;
+    } else if (health < thresholds.health.low && !state.notifications.healthNotified) {
+        notifications.push({
+            type: 'warning',
+            icon: '⚠️',
+            title: 'Здоровье на низком уровне',
+            message: `Здоровье питомца ${Math.round(health)}%! Полечите его.`,
+            level: 'warning'
+        });
+        state.notifications.healthNotified = true;
+    } else if (health < thresholds.health.medium && !state.notifications.healthNotified) {
+        notifications.push({
+            type: 'info',
+            icon: 'ℹ️',
+            title: 'Здоровье снижается',
+            message: `Здоровье питомца ${Math.round(health)}%. Обратите внимание.`,
+            level: 'info'
+        });
+        state.notifications.healthNotified = true;
+    } else if (health > thresholds.health.medium) {
+        state.notifications.healthNotified = false;
+    }
+    
+    // Проверка сытости
+    if (hunger < thresholds.hunger.critical) {
+        notifications.push({
+            type: 'critical',
+            icon: '🚨',
+            title: 'КРИТИЧЕСКИЙ ГОЛОД!',
+            message: `Сытость ${Math.round(hunger)}%! Срочно покормите питомца!`,
+            level: 'critical'
+        });
+    } else if (hunger < thresholds.hunger.low) {
+        notifications.push({
+            type: 'warning',
+            icon: '🍔',
+            title: 'Питомец голоден',
+            message: `Сытость ${Math.round(hunger)}%. Покормите его.`,
+            level: 'warning'
+        });
+    }
+    
+    // Проверка энергии
+    if (energy < thresholds.energy.critical) {
+        notifications.push({
+            type: 'warning',
+            icon: '⚡',
+            title: 'Энергия на нуле',
+            message: `Энергия ${Math.round(energy)}%! Отправьте питомца спать.`,
+            level: 'warning'
+        });
+    } else if (energy < thresholds.energy.low) {
+        notifications.push({
+            type: 'info',
+            icon: '😴',
+            title: 'Питомец устал',
+            message: `Энергия ${Math.round(energy)}%. Пора спать.`,
+            level: 'info'
+        });
+    }
+    
+    // Проверка настроения
+    if (mood < thresholds.mood.critical) {
+        notifications.push({
+            type: 'warning',
+            icon: '😢',
+            title: 'Питомец грустный',
+            message: `Настроение ${Math.round(mood)}%! Поиграйте с ним.`,
+            level: 'warning'
+        });
+    } else if (mood < thresholds.mood.low) {
+        notifications.push({
+            type: 'info',
+            icon: '😐',
+            title: 'Настроение падает',
+            message: `Настроение ${Math.round(mood)}%. Пора поиграть.`,
+            level: 'info'
+        });
+    }
+    
+    if (notifications.length > 0) {
+        const sorted = notifications.sort((a, b) => {
+            const levels = { critical: 0, warning: 1, info: 2 };
+            return levels[a.level] - levels[b.level];
+        });
+        
+        const notification = sorted[0];
+        showNotification(
+            `${notification.icon} ${notification.title}\n${notification.message}`,
+            notification.level === 'critical' ? 'error' : notification.level === 'warning' ? 'warning' : 'info'
+        );
+        
+        if (notification.level === 'critical' && tg?.showPopup) {
+            tg.showPopup({
+                title: notification.title,
+                message: notification.message,
+                buttons: [{ type: 'ok' }]
+            });
+        }
+        
+        state.notifications.lastNotification = {
+            ...notification,
+            time: Date.now()
+        };
+    }
+}
+
+// ============================================
+// 7. БАЗА ДАННЫХ
 // ============================================
 async function loadGame() {
     console.log('📂 Загрузка данных...');
@@ -213,11 +365,73 @@ function resetGame() {
         skins: ['🐣']
     };
     state._timestamp = Date.now();
+    resetNotificationFlags();
     saveGame();
 }
 
 // ============================================
-// 7. UI
+// 8. ОФФЛАЙН-РАСЧЕТ
+// ============================================
+function calculateOfflineProgress() {
+    const now = Date.now();
+    const lastLogin = state.user.lastLogin || now;
+    const timeOffline = now - lastLogin;
+    
+    if (timeOffline < 60000) return;
+    
+    const minutesOffline = Math.floor(timeOffline / 60000);
+    const secondsOffline = Math.floor(timeOffline / 1000);
+    
+    // Медленное уменьшение (в 10 раз медленнее)
+    const decreasePerSecond = {
+        health: 0.01,
+        energy: 0.03,
+        mood: 0.02,
+        hunger: 0.04
+    };
+    
+    state.pet.health = Math.max(0, state.pet.health - secondsOffline * decreasePerSecond.health);
+    state.pet.energy = Math.max(0, state.pet.energy - secondsOffline * decreasePerSecond.energy);
+    state.pet.mood = Math.max(0, state.pet.mood - secondsOffline * decreasePerSecond.mood);
+    state.pet.hunger = Math.max(0, state.pet.hunger - secondsOffline * decreasePerSecond.hunger);
+    
+    // Округляем
+    state.pet.health = Math.round(state.pet.health * 10) / 10;
+    state.pet.energy = Math.round(state.pet.energy * 10) / 10;
+    state.pet.mood = Math.round(state.pet.mood * 10) / 10;
+    state.pet.hunger = Math.round(state.pet.hunger * 10) / 10;
+    
+    if (state.pet.health <= 0) {
+        console.log('💀 Питомец умер в оффлайн!');
+        showNotification('💀 Питомец умер от голода! Восстановление...', 'error');
+        state.pet.health = 30;
+        state.pet.energy = 30;
+        state.pet.mood = 30;
+        state.pet.hunger = 30;
+        state.user.coins = Math.max(0, state.user.coins - 50);
+        resetNotificationFlags();
+    }
+    
+    if (minutesOffline > 60) {
+        const hours = Math.floor(minutesOffline / 60);
+        showNotification(
+            `⏰ Вы отсутствовали ${hours} ч ${minutesOffline % 60} мин!\n❤️ Здоровье: ${Math.round(state.pet.health)}%\n🍔 Сытость: ${Math.round(state.pet.hunger)}%`,
+            'warning'
+        );
+    } else if (minutesOffline > 10) {
+        showNotification(
+            `⏰ Вы отсутствовали ${minutesOffline} минут!\n❤️ Здоровье: ${Math.round(state.pet.health)}%`,
+            'info'
+        );
+    }
+    
+    state.user.lastLogin = now;
+    saveGame();
+    updateUI();
+}
+
+// ============================================
+// 9. UI
 // ============================================
 function updateUI() {
     const pet = state.pet;
@@ -226,7 +440,6 @@ function updateUI() {
     if (el.userName) el.userName.textContent = user.name || 'Гость';
     if (el.userLevel) el.userLevel.textContent = `Уровень ${pet.level}`;
 
-    // Прогресс уровня
     if (el.levelProgress && el.expDisplay) {
         const progress = Math.min(100, (pet.exp / pet.expToNext) * 100);
         el.levelProgress.style.width = progress + '%';
@@ -244,7 +457,6 @@ function updateUI() {
     if (el.petName) el.petName.textContent = pet.name;
     if (el.petStatus) el.petStatus.textContent = getPetStatus();
 
-    // Бары
     const bars = [
         { id: 'healthBar', value: pet.health },
         { id: 'energyBar', value: pet.energy },
@@ -276,7 +488,7 @@ function updateUI() {
 }
 
 // ============================================
-// 8. ДЕЙСТВИЯ
+// 10. ДЕЙСТВИЯ
 // ============================================
 function secureAction(action, callback, requireItem = null) {
     if (!security || security.isLocked) {
@@ -303,6 +515,7 @@ function secureAction(action, callback, requireItem = null) {
 
     try {
         callback();
+        resetNotificationFlags();
         updateUI();
         saveGame();
         return true;
@@ -351,7 +564,7 @@ function sleepPet() {
 }
 
 // ============================================
-// 9. УРОВНИ
+// 11. УРОВНИ
 // ============================================
 function addExp(amount) {
     state.pet.exp += amount;
@@ -376,7 +589,7 @@ function levelUp() {
 }
 
 // ============================================
-// 10. МАГАЗИН
+// 12. МАГАЗИН
 // ============================================
 function buyItem(type) {
     const price = CONFIG.SHOP_PRICES[type];
@@ -426,7 +639,7 @@ function changePetSkin() {
 }
 
 // ============================================
-// 11. РЕФЕРАЛЫ
+// 13. РЕФЕРАЛЫ
 // ============================================
 function generateReferralLink() {
     const link = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${state.user.id}`;
@@ -498,7 +711,7 @@ function applyReferral(refId) {
 }
 
 // ============================================
-// 12. РЕЙТИНГ
+// 14. РЕЙТИНГ
 // ============================================
 async function updateRating() {
     const { pet, user } = state;
@@ -565,127 +778,53 @@ async function updateRatingList() {
 }
 
 // ============================================
-// ИГРОВОЙ ЦИКЛ (ПОЛНОСТЬЮ ПЕРЕПИСАН)
+// 15. ИГРОВОЙ ЦИКЛ (С УВЕДОМЛЕНИЯМИ)
 // ============================================
-
-// Глобальная переменная для таймера
-let gameInterval = null;
-let healthDecreaseInterval = null;
+let gameLoopInterval = null;
 
 function startGameLoop() {
-    console.log('🔄 ЗАПУСК ИГРОВОГО ЦИКЛА');
-    
-    // Останавливаем старые таймеры
-    if (gameInterval) clearInterval(gameInterval);
-    if (healthDecreaseInterval) clearInterval(healthDecreaseInterval);
-    
-    // ============================================
-    // 1. ОСНОВНОЙ ЦИКЛ (каждые 5 секунд)
-    // ============================================
-    gameInterval = setInterval(() => {
-        console.log('⏰ ТИК ЦИКЛА');
-        
-        // Уменьшаем характеристики
-        const oldHealth = state.pet.health;
-        
-        state.pet.hunger = Math.max(0, state.pet.hunger - 2);
-        state.pet.energy = Math.max(0, state.pet.energy - 1.5);
-        state.pet.mood = Math.max(0, state.pet.mood - 1);
-        state.pet.health = Math.max(0, state.pet.health - 0.5);
-        
-        console.log(`❤️ Здоровье: ${oldHealth} → ${state.pet.health}`);
-        
-        // Проверка на смерть
+    if (gameLoopInterval) clearInterval(gameLoopInterval);
+    console.log('🔄 Игровой цикл запущен (медленный)');
+
+    function updateStats() {
+        state.pet.hunger = Math.max(0, state.pet.hunger - CONFIG.DECREASE_RATE.hunger);
+        state.pet.energy = Math.max(0, state.pet.energy - CONFIG.DECREASE_RATE.energy);
+        state.pet.mood = Math.max(0, state.pet.mood - CONFIG.DECREASE_RATE.mood);
+        state.pet.health = Math.max(0, state.pet.health - CONFIG.DECREASE_RATE.health);
+
+        state.pet.hunger = Math.round(state.pet.hunger * 10) / 10;
+        state.pet.energy = Math.round(state.pet.energy * 10) / 10;
+        state.pet.mood = Math.round(state.pet.mood * 10) / 10;
+        state.pet.health = Math.round(state.pet.health * 10) / 10;
+
         if (state.pet.health <= 0) {
-            console.log('💀 ПИТОМЕЦ УМЕР!');
             showNotification('💀 Питомец умер! Восстановление...', 'error');
             state.pet.health = 50;
             state.pet.energy = 50;
             state.pet.mood = 50;
             state.pet.hunger = 50;
             state.user.coins = Math.max(0, state.user.coins - 20);
+            resetNotificationFlags();
         }
-        
-        // Пассивный доход
+
+        checkPetStats();
+
         if (Math.random() < 0.05) {
             state.user.coins += randomInt(1, 3);
         }
-        
+
         state.user.totalPlayTime += 5;
-        
-        // ОБНОВЛЯЕМ UI
         updateUI();
         saveGame();
-        
-        console.log('📊 После обновления:', {
-            здоровье: state.pet.health,
-            энергия: state.pet.energy,
-            настроение: state.pet.mood,
-            сытость: state.pet.hunger
-        });
-        
-    }, 5000); // Каждые 5 секунд
-    
-    // ============================================
-    // 2. ДОПОЛНИТЕЛЬНЫЙ ЦИКЛ (каждую секунду)
-    // ============================================
-    healthDecreaseInterval = setInterval(() => {
-        // Уменьшаем здоровье каждую секунду (для наглядности)
-        // state.pet.health = Math.max(0, state.pet.health - 0.1);
-        // updateUI();
-    }, 1000);
-    
-    console.log('✅ ИГРОВОЙ ЦИКЛ ЗАПУЩЕН');
-    
-    // Первое обновление через 1 секунду
-    setTimeout(() => {
-        console.log('🔄 ПЕРВОЕ ОБНОВЛЕНИЕ');
-        updateUI();
-    }, 1000);
-}
-
-// ============================================
-// ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ (ДЛЯ ТЕСТА)
-// ============================================
-function forceHealthDecrease() {
-    console.log('🔽 ПРИНУДИТЕЛЬНОЕ УМЕНЬШЕНИЕ');
-    state.pet.health = Math.max(0, state.pet.health - 10);
-    updateUI();
-    console.log(`❤️ Здоровье после принудительного: ${state.pet.health}`);
-    return state.pet.health;
-}
-
-// ============================================
-// ТЕСТОВАЯ ФУНКЦИЯ
-// ============================================
-function testHealth() {
-    console.log('🧪 === ТЕСТ ЗДОРОВЬЯ ===');
-    console.log('❤️ Текущее здоровье:', state.pet.health);
-    
-    // Уменьшаем на 5
-    state.pet.health = Math.max(0, state.pet.health - 5);
-    updateUI();
-    console.log('❤️ После -5:', state.pet.health);
-    
-    // Показываем полоску
-    const bar = document.getElementById('healthBar');
-    if (bar) {
-        console.log('📊 Полоска:', {
-            ширина: bar.style.width,
-            текст: bar.textContent
-        });
     }
-    
-    return state.pet.health;
+
+    setTimeout(updateStats, 1000);
+    gameLoopInterval = setInterval(updateStats, CONFIG.GAME_LOOP_INTERVAL);
+    window.gameLoopInterval = gameLoopInterval;
 }
 
-// Делаем функции глобальными
-window.forceHealthDecrease = forceHealthDecrease;
-window.testHealth = testHealth;
-window.startGameLoop = startGameLoop;
-
 // ============================================
-// 14. БОНУСЫ
+// 16. БОНУСЫ
 // ============================================
 function checkDailyBonus() {
     const now = Date.now();
@@ -706,7 +845,7 @@ function checkDailyBonus() {
 }
 
 // ============================================
-// 15. УВЕДОМЛЕНИЯ
+// 17. УВЕДОМЛЕНИЯ
 // ============================================
 function showNotification(message, type = 'info') {
     console.log('📢', message);
@@ -735,7 +874,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ============================================
-// 16. НАСТРОЙКИ
+// 18. НАСТРОЙКИ
 // ============================================
 function setupNavigation() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -789,7 +928,7 @@ function setupTelegramTheme() {
 }
 
 // ============================================
-// 17. ИНИЦИАЛИЗАЦИЯ
+// 19. ИНИЦИАЛИЗАЦИЯ
 // ============================================
 async function init() {
     console.log('🚀 Инициализация...');
@@ -800,6 +939,10 @@ async function init() {
     }
 
     await loadGame();
+    
+    // ⭐ РАСЧЕТ ОФФЛАЙН-ВРЕМЕНИ ⭐
+    calculateOfflineProgress();
+    
     updateUI();
     setupNavigation();
     setupButtons();
@@ -831,7 +974,6 @@ async function init() {
     });
     console.log('☁️ База данных:', db && db.connected ? '✅ Подключена' : '⚠️ Офлайн');
 
-    // Делаем доступным в консоли
     window.startGameLoop = startGameLoop;
     window.gameLoopInterval = gameLoopInterval;
     window.updateUI = updateUI;
@@ -840,7 +982,7 @@ async function init() {
 }
 
 // ============================================
-// 18. ГЛОБАЛЬНЫЙ ДОСТУП
+// 20. ГЛОБАЛЬНЫЙ ДОСТУП
 // ============================================
 window.feedPet = feedPet;
 window.playPet = playPet;
@@ -860,7 +1002,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ============================================
-// 19. ЗАПУСК
+// 21. ЗАПУСК
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM загружен');
