@@ -1,0 +1,12 @@
+{
+  "name": "Умный конструктор рецептов",
+  "short_name": "Рецепты",
+  "description": "Подбор рецептов с учётом магазинов, исключений и ИИ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f9f7f3",
+  "theme_color": "#ffb347",
+  "orientation": "portrait-primary",
+  "lang": "ru",
+  "categories": ["food", "lifestyle", "utilities"]
+}
