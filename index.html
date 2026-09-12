@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f9f7f3">
+    <title>Умный конструктор рецептов</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background: #f9f7f3;
+            color: #2d2d2d;
+            line-height: 1.5;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 1rem;
+            overscroll-behavior-y: contain;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .subhead {
+            color: #5e5e5e;
+            margin-bottom: 1.2rem;
+            border-left: 4px solid #ffb347;
+            padding-left: 0.8rem;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+        }
+
+        /* ============ СЕТКА ============ */
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.2fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .panel {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1.2rem 1.2rem;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+            border: 1px solid #edeae4;
+            margin-bottom: 1.2rem;
+            width: 100%;
+        }
+
+        .panel:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel h2 {
+            font-size: clamp(1.05rem, 3vw, 1.25rem);
+            font-weight: 600;
+            margin-bottom: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #1f1f1f;
+            flex-wrap: wrap;
+        }
+
+        /* ============ МАГАЗИНЫ ============ */
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .store-option {
+            background: #f2f0eb;
+            border: 1px solid #e0dbd2;
+            padding: 0.7rem 0.6rem;
+            border-radius: 40px;
+            font-size: clamp(0.8rem, 2.5vw, 0.92rem);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-align: center;
+            min-height: 42px;
+            font-weight: 500;
+        }
+
+        .store-option:active {
+            transform: scale(0.96);
+        }
+
+        .store-option.selected {
+            background: #d3e3fd;
+            border-color: #7aa9e6;
+            color: #1a3e6b;
+        }
+
+        .store-option.selected::before {
+            content: "✓";
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .store-option:not(.selected)::before {
+            content: "＋";
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* ============ ИНГРЕДИЕНТЫ ============ */
+        .ingredient-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .tag {
+            background: #f0f0f0;
+            border-radius: 30px;
+            padding: 0.55rem 0.95rem;
+            font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 36px;
+        }
+
+        .tag:active {
+            transform: scale(0.95);
+        }
+
+        .tag.excluded {
+            background: #ffe1e1;
+            border-color: #ff9f9f;
+            color: #b33a3a;
+            text-decoration: line-through 1px #b33a3a;
+        }
+
+        .tag.excluded::before {
+            content: "✕";
+            font-weight: bold;
+            font-size: 0.7rem;
+            color: #b33a3a;
+        }
+
+        .tag:not(.excluded)::before {
+            content: "✓";
+            font-weight: bold;
+            font-size: 0.7rem;
+            color: #2e7d32;
+        }
+
+        /* ============ СЧЁТЧИКИ ============ */
+        .people-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+            margin-bottom: 0.6rem;
+            flex-wrap: nowrap;
+        }
+
+        .people-label {
+            font-size: clamp(0.85rem, 2.6vw, 0.95rem);
+            font-weight: 500;
+            color: #2d2d2d;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: #f7f5f1;
+            border-radius: 40px;
+            padding: 0.2rem;
+            border: 1px solid #e2ddd4;
+            flex-shrink: 0;
+        }
+
+        .counter button {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #4a4a4a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .counter button:active {
+            background: #e0dcd3;
+            transform: scale(0.92);
+        }
+
+        .counter span {
+            min-width: 28px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* ============ ПРИЁМЫ ПИЩИ ============ */
+        .meal-toggles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .meal-btn {
+            background: #f2f0eb;
+            border: 1px solid #e0dbd2;
+            padding: 0.7rem 0.8rem;
+            border-radius: 40px;
+            font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+            cursor: pointer;
+            transition: 0.15s;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-height: 42px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .meal-btn:active {
+            transform: scale(0.96);
+        }
+
+        .meal-btn.selected {
+            background: #ffeec2;
+            border-color: #ffb347;
+            color: #7a4d00;
+        }
+
+        .meal-btn.selected::before {
+            content: "✓";
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .meal-btn:not(.selected)::before {
+            content: "○";
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        /* ============ РЕЦЕПТЫ ============ */
+        .recipes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            padding-right: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .recipe-card {
+            background: #fdfcf9;
+            border-radius: 18px;
+            padding: 1.1rem 1.1rem 0.9rem 1.1rem;
+            border: 1px solid #eae6df;
+            transition: 0.15s;
+        }
+
+        .recipe-card h3 {
+            font-size: clamp(1.02rem, 3vw, 1.2rem);
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            line-height: 1.25;
+        }
+
+        .recipe-desc {
+            font-size: clamp(0.82rem, 2.4vw, 0.92rem);
+            color: #5e5e5e;
+            margin-bottom: 0.7rem;
+        }
+
+        .meal-badge {
+            display: inline-block;
+            background: #e6f0fa;
+            color: #2c577c;
+            border-radius: 30px;
+            padding: 0.15rem 0.7rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.6rem;
+            font-weight: 500;
+        }
+
+        .ingredients-badge {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .badge {
+            background: #e6f3e6;
+            border: 1px solid #b8ddb8;
+            border-radius: 30px;
+            padding: 0.2rem 0.7rem;
+            font-size: clamp(0.72rem, 2.2vw, 0.8rem);
+            color: #1f4f1f;
+        }
+
+        .stores-section {
+            background: #f4f8fe;
+            border-radius: 12px;
+            padding: 0.7rem 0.8rem;
+            border-left: 4px solid #7aa9e6;
+        }
+
+        .stores-section p {
+            font-size: clamp(0.78rem, 2.3vw, 0.85rem);
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: #2c577c;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .store-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem 0.5rem;
+        }
+
+        .store-item {
+            font-size: clamp(0.72rem, 2.2vw, 0.82rem);
+            background: white;
+            padding: 0.15rem 0.65rem;
+            border-radius: 50px;
+            border: 1px solid #cdddec;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            color: #1f3f5c;
+        }
+
+        .store-item::before {
+            content: "📍";
+            font-size: 0.65rem;
+        }
+
+        .empty-state {
+            color: #999;
+            font-style: italic;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #faf9f7;
+            border-radius: 18px;
+            border: 1px dashed #ddd;
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+        }
+
+        .portion-hint {
+            font-size: clamp(0.78rem, 2.3vw, 0.88rem);
+            background: #fef7e9;
+            border-radius: 12px;
+            padding: 0.55rem 0.9rem;
+            margin-top: 0.9rem;
+            color: #7a4d00;
+            border: 1px solid #ffe0a3;
+            line-height: 1.4;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.8rem;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .reset-btn {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 0.55rem 1rem;
+            border-radius: 40px;
+            font-size: clamp(0.78rem, 2.3vw, 0.85rem);
+            cursor: pointer;
+            color: #444;
+            transition: 0.1s;
+            min-height: 38px;
+            touch-action: manipulation;
+        }
+
+        .reset-btn:active {
+            background: #eae6de;
+            transform: scale(0.96);
+        }
+
+        /* ============ СКРОЛЛБАР ============ */
+        .recipes-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .recipes-list::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 10px;
+        }
+        .recipes-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* ============ ПЛАНШЕТЫ ============ */
+        @media (max-width: 1000px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .recipes-list {
+                max-height: none;
+                overflow-y: visible;
+            }
+        }
+
+        /* ============ МОБИЛЬНЫЕ ============ */
+        @media (max-width: 600px) {
+            body {
+                padding: 0.7rem;
+            }
+
+            .panel {
+                padding: 1rem 0.9rem;
+                border-radius: 16px;
+                margin-bottom: 0.9rem;
+            }
+
+            .store-grid {
+                grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+                gap: 0.4rem;
+            }
+
+            .store-option {
+                padding: 0.6rem 0.4rem;
+                min-height: 40px;
+                font-size: 0.82rem;
+            }
+
+            .tag {
+                padding: 0.5rem 0.8rem;
+                min-height: 34px;
+                font-size: 0.8rem;
+            }
+
+            .counter button {
+                width: 36px;
+                height: 36px;
+                font-size: 1.15rem;
+            }
+
+            .meal-toggles {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 0.4rem;
+            }
+
+            .meal-btn {
+                padding: 0.6rem 0.3rem;
+                font-size: 0.8rem;
+                min-height: 40px;
+            }
+
+            .recipe-card {
+                padding: 0.95rem 0.9rem 0.8rem 0.9rem;
+                border-radius: 16px;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .reset-btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 1.35rem;
+            }
+
+            .subhead {
+                font-size: 0.85rem;
+                padding-left: 0.6rem;
+            }
+        }
+
+        /* ============ УЗКИЕ ЭКРАНЫ (до 380px) ============ */
+        @media (max-width: 380px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .panel {
+                padding: 0.85rem 0.75rem;
+            }
+
+            .store-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .people-label {
+                font-size: 0.8rem;
+            }
+
+            .counter button {
+                width: 34px;
+                height: 34px;
+            }
+
+            .counter span {
+                min-width: 24px;
+                font-size: 0.9rem;
+            }
+
+            .meal-toggles {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============ БОЛЬШИЕ ЭКРАНЫ ============ */
+        @media (min-width: 1600px) {
+            html {
+                font-size: 17px;
+            }
+            .container {
+                max-width: 1500px;
+            }
+            .panel {
+                padding: 1.5rem;
+            }
+        }
+
+        /* ============ ЛАНДШАФТ НА МОБИЛЬНЫХ ============ */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 0.5rem;
+            }
+            .recipes-list {
+                max-height: 70vh;
+            }
+            .panel {
+                padding: 0.8rem;
+            }
+        }
+
+        /* ============ ДОСТУПНОСТЬ И ФОКУС ============ */
+        .store-option:focus-visible,
+        .tag:focus-visible,
+        .meal-btn:focus-visible,
+        .reset-btn:focus-visible,
+        .counter button:focus-visible {
+            outline: 2px solid #7aa9e6;
+            outline-offset: 2px;
+        }
+
+        /* ============ АНИМАЦИИ ПОЯВЛЕНИЯ ============ */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .recipe-card {
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        /* ============ SAFE AREA (для iPhone с вырезом) ============ */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: max(1rem, env(safe-area-inset-left));
+                padding-right: max(1rem, env(safe-area-inset-right));
+                padding-top: max(1rem, env(safe-area-inset-top));
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            }
+        }
+
+        @media (max-width: 600px) {
+            @supports (padding: max(0px)) {
+                body {
+                    padding-left: max(0.7rem, env(safe-area-inset-left));
+                    padding-right: max(0.7rem, env(safe-area-inset-right));
+                    padding-top: max(0.7rem, env(safe-area-inset-top));
+                    padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
+                }
+            }
+        }
+
+        /* ============ ПРЕДОТВРАЩЕНИЕ ВЫДЕЛЕНИЯ ============ */
+        .store-option,
+        .tag,
+        .meal-btn,
+        .counter button,
+        .reset-btn {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* ============ HOVER ТОЛЬКО ДЛЯ УСТРОЙСТВ С МЫШЬЮ ============ */
+        @media (hover: hover) {
+            .store-option:hover:not(.selected) {
+                background: #eae6de;
+            }
+            .tag:hover:not(.excluded) {
+                background: #e6e6e6;
+            }
+            .meal-btn:hover:not(.selected) {
+                background: #eae6de;
+            }
+            .counter button:hover {
+                background: #f0ece4;
+            }
+            .reset-btn:hover {
+                background: #f2f2f2;
+                border-color: #aaa;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><span>🍳</span> Умный конструктор рецептов</h1>
+    <div class="subhead">
+        Выберите магазин, исключите нелюбимые продукты, укажите количество едоков и приёмы пищи — получите персональные рецепты.
+    </div>
+
+    <div class="main-grid">
+        <!-- ЛЕВАЯ ПАНЕЛЬ: Настройки -->
+        <div>
+            <!-- Магазины -->
+            <div class="panel">
+                <h2>🏪 Магазины, где покупаете</h2>
+                <div class="store-grid" id="storeGrid"></div>
+                <div class="portion-hint" id="storeHint" style="display: none;"></div>
+            </div>
+
+            <!-- Исключаемые продукты -->
+            <div class="panel">
+                <h2>🚫 Продукты, которые не едите</h2>
+                <div class="ingredient-tags" id="ingredientTags"></div>
+                <div class="actions">
+                    <span style="font-size:0.82rem; color:#888;" id="excludedCount">Исключено: 0</span>
+                    <button class="reset-btn" id="resetExclusions">Сбросить продукты</button>
+                </div>
+            </div>
+
+            <!-- Количество людей -->
+            <div class="panel">
+                <h2>👨‍👩‍👧‍👦 Кто будет есть</h2>
+                <div class="people-row">
+                    <span class="people-label">Взрослые</span>
+                    <div class="counter" data-type="adults">
+                        <button class="dec" aria-label="Уменьшить">−</button>
+                        <span class="count" id="adultsCount">2</span>
+                        <button class="inc" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="people-row">
+                    <span class="people-label">Дети 3–7 лет</span>
+                    <div class="counter" data-type="kidsSmall">
+                        <button class="dec" aria-label="Уменьшить">−</button>
+                        <span class="count" id="kidsSmallCount">0</span>
+                        <button class="inc" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="people-row">
+                    <span class="people-label">Дети 8–14 лет</span>
+                    <div class="counter" data-type="kidsBig">
+                        <button class="dec" aria-label="Уменьшить">−</button>
+                        <span class="count" id="kidsBigCount">0</span>
+                        <button class="inc" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="people-row">
+                    <span class="people-label">Подростки 15+</span>
+                    <div class="counter" data-type="teens">
+                        <button class="dec" aria-label="Уменьшить">−</button>
+                        <span class="count" id="teensCount">0</span>
+                        <button class="inc" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="portion-hint" id="peopleHint">
+                    🍽️ Порций: примерно <strong id="portionCount">2</strong> взрослых
+                </div>
+            </div>
+
+            <!-- Приёмы пищи -->
+            <div class="panel">
+                <h2>🕒 Приёмы пищи</h2>
+                <div class="meal-toggles" id="mealToggles">
+                    <div class="meal-btn selected" data-meal="завтрак">Завтрак</div>
+                    <div class="meal-btn selected" data-meal="обед">Обед</div>
+                    <div class="meal-btn selected" data-meal="ужин">Ужин</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ: Рецепты -->
+        <div class="panel">
+            <h2>📖 Подходящие рецепты <span style="font-size:0.85rem; font-weight:400; color:#888;" id="recipeCount"></span></h2>
+            <div class="recipes-list" id="recipesList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== ДАННЫЕ ====================
+    const STORES = [
+        { id: 'chizhik', name: 'Чижик' },
+        { id: 'pyaterochka', name: 'Пятёрочка' },
+        { id: 'magnit', name: 'Магнит' },
+        { id: 'kb', name: 'КБ' },
+        { id: 'vkusvill', name: 'ВкусВилл' },
+        { id: 'auchan', name: 'Ашан' }
+    ];
+
+    const ALL_INGREDIENTS = [
+        "курица", "говядина", "свинина", "рыба", "морепродукты",
+        "яйца", "молоко", "сыр", "творог", "сливки",
+        "пшеничная мука", "дрожжи", "сахар", "мёд", "орехи",
+        "грибы", "лук", "чеснок", "помидоры", "картофель",
+        "рис", "макароны", "баклажаны", "капуста", "морковь",
+        "кинза", "петрушка", "укроп", "базилик", "сельдерей",
+        "болгарский перец", "кабачки", "тыква", "свёкла", "редис"
+    ];
+
+    const RECIPES = [
+        {
+            id: 1,
+            name: "Куриный суп с рисом и овощами",
+            description: "Лёгкий и сытный суп, готовится за 40 минут.",
+            meal: ["обед", "ужин"],
+            ingredients: ["курица", "рис", "морковь", "лук", "картофель", "чеснок", "петрушка"],
+            basePortions: 4,
+            storeMap: {
+                "курица": ["pyaterochka", "magnit", "vkusvill", "auchan"],
+                "рис": ["pyaterochka", "magnit", "auchan"],
+                "морковь": ["pyaterochka", "magnit", "vkusvill", "chizhik"],
+                "лук": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "картофель": ["pyaterochka", "magnit", "vkusvill", "chizhik"],
+                "чеснок": ["magnit", "auchan", "vkusvill"],
+                "петрушка": ["vkusvill", "auchan", "magnit"]
+            }
+        },
+        {
+            id: 2,
+            name: "Овощное рагу с капустой и грибами",
+            description: "Вегетарианское блюдо, богатое клетчаткой.",
+            meal: ["обед", "ужин"],
+            ingredients: ["капуста", "грибы", "морковь", "лук", "помидоры", "чеснок", "картофель"],
+            basePortions: 4,
+            storeMap: {
+                "капуста": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "грибы": ["vkusvill", "auchan", "magnit"],
+                "морковь": ["pyaterochka", "magnit", "vkusvill", "chizhik"],
+                "лук": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "помидоры": ["vkusvill", "pyaterochka", "auchan"],
+                "чеснок": ["magnit", "auchan", "vkusvill"],
+                "картофель": ["pyaterochka", "magnit", "vkusvill", "chizhik"]
+            }
+        },
+        {
+            id: 3,
+            name: "Паста с баклажанами и томатами",
+            description: "Итальянский ужин за 30 минут.",
+            meal: ["ужин", "обед"],
+            ingredients: ["макароны", "баклажаны", "помидоры", "чеснок", "сыр", "базилик"],
+            basePortions: 3,
+            storeMap: {
+                "макароны": ["magnit", "pyaterochka", "auchan", "chizhik"],
+                "баклажаны": ["vkusvill", "pyaterochka", "auchan"],
+                "помидоры": ["vkusvill", "pyaterochka", "auchan"],
+                "чеснок": ["magnit", "auchan", "vkusvill"],
+                "сыр": ["magnit", "pyaterochka", "auchan"],
+                "базилик": ["vkusvill", "auchan"]
+            }
+        },
+        {
+            id: 4,
+            name: "Омлет с овощами и сыром",
+            description: "Быстрый завтрак, подходит для низкоуглеводной диеты.",
+            meal: ["завтрак"],
+            ingredients: ["яйца", "молоко", "сыр", "помидоры", "лук", "морковь", "укроп"],
+            basePortions: 2,
+            storeMap: {
+                "яйца": ["magnit", "pyaterochka", "vkusvill", "chizhik"],
+                "молоко": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "сыр": ["magnit", "pyaterochka", "auchan"],
+                "помидоры": ["vkusvill", "pyaterochka", "auchan"],
+                "лук": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "морковь": ["pyaterochka", "magnit", "vkusvill", "chizhik"],
+                "укроп": ["vkusvill", "auchan", "magnit"]
+            }
+        },
+        {
+            id: 5,
+            name: "Творожная запеканка с ягодами",
+            description: "Нежный десерт без муки и сахара.",
+            meal: ["завтрак", "ужин"],
+            ingredients: ["творог", "яйца", "мёд", "орехи", "сливки"],
+            basePortions: 4,
+            storeMap: {
+                "творог": ["vkusvill", "magnit", "pyaterochka"],
+                "яйца": ["magnit", "pyaterochka", "vkusvill", "chizhik"],
+                "мёд": ["auchan", "vkusvill", "magnit"],
+                "орехи": ["vkusvill", "auchan", "magnit"],
+                "сливки": ["pyaterochka", "magnit", "auchan"]
+            }
+        },
+        {
+            id: 6,
+            name: "Салат с курицей, сыром и помидорами",
+            description: "Сытный салат для обеда или лёгкого ужина.",
+            meal: ["обед", "ужин"],
+            ingredients: ["курица", "сыр", "помидоры", "чеснок", "лук", "кинза"],
+            basePortions: 3,
+            storeMap: {
+                "курица": ["pyaterochka", "magnit", "vkusvill", "auchan"],
+                "сыр": ["magnit", "pyaterochka", "auchan"],
+                "помидоры": ["vkusvill", "pyaterochka", "auchan"],
+                "чеснок": ["magnit", "auchan", "vkusvill"],
+                "лук": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "кинза": ["vkusvill", "auchan"]
+            }
+        },
+        {
+            id: 7,
+            name: "Рис с грибами и луком",
+            description: "Простое и сытное блюдо для всей семьи.",
+            meal: ["обед", "ужин"],
+            ingredients: ["рис", "грибы", "лук", "морковь", "чеснок", "петрушка"],
+            basePortions: 4,
+            storeMap: {
+                "рис": ["pyaterochka", "magnit", "auchan"],
+                "грибы": ["vkusvill", "auchan", "magnit"],
+                "лук": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "морковь": ["pyaterochka", "magnit", "vkusvill", "chizhik"],
+                "чеснок": ["magnit", "auchan", "vkusvill"],
+                "петрушка": ["vkusvill", "auchan", "magnit"]
+            }
+        },
+        {
+            id: 8,
+            name: "Тыквенный крем-суп",
+            description: "Нежный и полезный суп, особенно осенью.",
+            meal: ["обед", "ужин"],
+            ingredients: ["тыква", "морковь", "лук", "чеснок", "сливки"],
+            basePortions: 4,
+            storeMap: {
+                "тыква": ["vkusvill", "auchan", "magnit"],
+                "морковь": ["pyaterochka", "magnit", "vkusvill", "chizhik"],
+                "лук": ["pyaterochka", "magnit", "auchan", "chizhik"],
+                "чеснок": ["magnit", "auchan", "vkusvill"],
+                "сливки": ["pyaterochka", "magnit", "auchan"]
+            }
+        }
+    ];
+
+    // ==================== СОСТОЯНИЕ ====================
+    let selectedStores = new Set(['pyaterochka', 'magnit']);
+    let excludedSet = new Set();
+    let people = {
+        adults: 2,
+        kidsSmall: 0,
+        kidsBig: 0,
+        teens: 0
+    };
+    let selectedMeals = new Set(['завтрак', 'обед', 'ужин']);
+
+    // ==================== DOM ====================
+    const storeGridEl = document.getElementById('storeGrid');
+    const ingredientTagsEl = document.getElementById('ingredientTags');
+    const recipesListEl = document.getElementById('recipesList');
+    const excludedCountEl = document.getElementById('excludedCount');
+    const resetExclusionsBtn = document.getElementById('resetExclusions');
+    const mealTogglesEl = document.getElementById('mealToggles');
+    const portionCountEl = document.getElementById('portionCount');
+    const peopleHintEl = document.getElementById('peopleHint');
+    const recipeCountEl = document.getElementById('recipeCount');
+    const storeHintEl = document.getElementById('storeHint');
+
+    // ==================== ФУНКЦИИ ====================
+
+    function renderStores() {
+        storeGridEl.innerHTML = '';
+        STORES.forEach(store => {
+            const el = document.createElement('button');
+            el.type = 'button';
+            el.className = `store-option ${selectedStores.has(store.id) ? 'selected' : ''}`;
+            el.textContent = store.name;
+            el.dataset.storeId = store.id;
+            el.setAttribute('aria-pressed', selectedStores.has(store.id));
+            el.addEventListener('click', () => toggleStore(store.id));
+            storeGridEl.appendChild(el);
+        });
+        updateStoreHint();
+    }
+
+    function toggleStore(storeId) {
+        if (selectedStores.has(storeId)) {
+            if (selectedStores.size > 1) {
+                selectedStores.delete(storeId);
+            } else {
+                alert('Нужно выбрать хотя бы один магазин');
+                return;
+            }
+        } else {
+            selectedStores.add(storeId);
+        }
+        renderStores();
+        renderRecipes();
+    }
+
+    function updateStoreHint() {
+        const selectedNames = STORES.filter(s => selectedStores.has(s.id)).map(s => s.name);
+        if (selectedNames.length === 0) {
+            storeHintEl.style.display = 'none';
+        } else {
+            storeHintEl.style.display = 'block';
+            storeHintEl.innerHTML = `🛒 Выбрано: <strong>${selectedNames.join(', ')}</strong>`;
+        }
+    }
+
+    function renderIngredients() {
+        ingredientTagsEl.innerHTML = '';
+        ALL_INGREDIENTS.forEach(ing => {
+            const tag = document.createElement('button');
+            tag.type = 'button';
+            tag.className = `tag ${excludedSet.has(ing) ? 'excluded' : ''}`;
+            tag.textContent = ing;
+            tag.dataset.ingredient = ing;
+            tag.setAttribute('aria-pressed', excludedSet.has(ing));
+            tag.addEventListener('click', () => toggleIngredient(ing));
+            ingredientTagsEl.appendChild(tag);
+        });
+        excludedCountEl.textContent = `Исключено: ${excludedSet.size}`;
+    }
+
+    function toggleIngredient(ingredient) {
+        if (excludedSet.has(ingredient)) {
+            excludedSet.delete(ingredient);
+        } else {
+            excludedSet.add(ingredient);
+        }
+        renderIngredients();
+        renderRecipes();
+    }
+
+    function updatePeopleDisplay() {
+        document.getElementById('adultsCount').textContent = people.adults;
+        document.getElementById('kidsSmallCount').textContent = people.kidsSmall;
+        document.getElementById('kidsBigCount').textContent = people.kidsBig;
+        document.getElementById('teensCount').textContent = people.teens;
+
+        const adultEquiv = people.adults
+            + people.kidsSmall * 0.5
+            + people.kidsBig * 0.7
+            + people.teens * 1.0;
+
+        portionCountEl.textContent = Math.max(1, Math.round(adultEquiv * 10) / 10);
+
+        let hintText = '🍽️ Порций: ';
+        if (people.adults > 0) hintText += `${people.adults} взр. `;
+        if (people.kidsSmall > 0) hintText += `${people.kidsSmall} мл.дет. `;
+        if (people.kidsBig > 0) hintText += `${people.kidsBig} ст.дет. `;
+        if (people.teens > 0) hintText += `${people.teens} подр. `;
+        if (people.adults + people.kidsSmall + people.kidsBig + people.teens === 0) {
+            hintText = '⚠️ Добавьте хотя бы одного человека';
+        }
+        peopleHintEl.innerHTML = hintText + ` (≈${Math.max(1, Math.round(adultEquiv * 10) / 10)} порц.)`;
+    }
+
+    function initCounters() {
+        document.querySelectorAll('.counter').forEach(counter => {
+            const type = counter.dataset.type;
+            const decBtn = counter.querySelector('.dec');
+            const incBtn = counter.querySelector('.inc');
+            const countSpan = counter.querySelector('.count');
+
+            const update = (delta) => {
+                let val = people[type] + delta;
+                if (val < 0) val = 0;
+                if (val > 20) val = 20;
+                people[type] = val;
+                countSpan.textContent = val;
+                updatePeopleDisplay();
+                renderRecipes();
+            };
+
+            decBtn.addEventListener('click', () => update(-1));
+            incBtn.addEventListener('click', () => update(1));
+        });
+        updatePeopleDisplay();
+    }
+
+    function renderMeals() {
+        mealTogglesEl.innerHTML = '';
+        ['завтрак', 'обед', 'ужин'].forEach(meal => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `meal-btn ${selectedMeals.has(meal) ? 'selected' : ''}`;
+            btn.textContent = meal.charAt(0).toUpperCase() + meal.slice(1);
+            btn.dataset.meal = meal;
+            btn.setAttribute('aria-pressed', selectedMeals.has(meal));
+            btn.addEventListener('click', () => toggleMeal(meal));
+            mealTogglesEl.appendChild(btn);
+        });
+    }
+
+    function toggleMeal(meal) {
+        if (selectedMeals.has(meal)) {
+            if (selectedMeals.size > 1) {
+                selectedMeals.delete(meal);
+            } else {
+                alert('Выберите хотя бы один приём пищи');
+                return;
+            }
+        } else {
+            selectedMeals.add(meal);
+        }
+        renderMeals();
+        renderRecipes();
+    }
+
+    function getFilteredRecipes() {
+        const storeFiltered = RECIPES.filter(recipe => {
+            return recipe.ingredients.every(ing => {
+                const storesForIng = recipe.storeMap[ing] || [];
+                if (storesForIng.length === 0) return true;
+                return storesForIng.some(storeId => selectedStores.has(storeId));
+            });
+        });
+
+        const excludeFiltered = storeFiltered.filter(recipe => {
+            return !recipe.ingredients.some(ing => excludedSet.has(ing));
+        });
+
+        const mealFiltered = excludeFiltered.filter(recipe => {
+            return recipe.meal.some(m => selectedMeals.has(m));
+        });
+
+        const adultEquiv = people.adults
+            + people.kidsSmall * 0.5
+            + people.kidsBig * 0.7
+            + people.teens * 1.0;
+        const targetPortions = Math.max(1, adultEquiv);
+
+        mealFiltered.sort((a, b) => {
+            const diffA = Math.abs(a.basePortions - targetPortions);
+            const diffB = Math.abs(b.basePortions - targetPortions);
+            return diffA - diffB;
+        });
+
+        return mealFiltered;
+    }
+
+    function renderRecipes() {
+        const filtered = getFilteredRecipes();
+        recipeCountEl.textContent = `(${filtered.length})`;
+
+        if (filtered.length === 0) {
+            recipesListEl.innerHTML = `<div class="empty-state">😕 Нет рецептов, подходящих под ваши условия.<br>Попробуйте изменить магазины, убрать исключения или добавить приёмы пищи.</div>`;
+            return;
+        }
+
+        const adultEquiv = people.adults
+            + people.kidsSmall * 0.5
+            + people.kidsBig * 0.7
+            + people.teens * 1.0;
+        const targetPortions = Math.max(1, adultEquiv);
+
+        recipesListEl.innerHTML = '';
+
+        filtered.forEach(recipe => {
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+
+            const title = document.createElement('h3');
+            title.textContent = recipe.name;
+
+            const mealBadge = document.createElement('div');
+            mealBadge.className = 'meal-badge';
+            mealBadge.textContent = recipe.meal.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(' · ');
+
+            const desc = document.createElement('div');
+            desc.className = 'recipe-desc';
+            desc.textContent = recipe.description;
+
+            const badgeContainer = document.createElement('div');
+            badgeContainer.className = 'ingredients-badge';
+            recipe.ingredients.forEach(ing => {
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                badge.textContent = ing;
+                badgeContainer.appendChild(badge);
+            });
+
+            const storesSection = document.createElement('div');
+            storesSection.className = 'stores-section';
+            const storesTitle = document.createElement('p');
+            storesTitle.innerHTML = '🛒 Доступно в ваших магазинах:';
+            storesSection.appendChild(storesTitle);
+
+            const storeListDiv = document.createElement('div');
+            storeListDiv.className = 'store-list';
+
+            const availableStores = new Set();
+            recipe.ingredients.forEach(ing => {
+                const storesForIng = recipe.storeMap[ing] || [];
+                storesForIng.forEach(storeId => {
+                    if (selectedStores.has(storeId)) {
+                        availableStores.add(storeId);
+                    }
+                });
+            });
+
+            if (availableStores.size === 0) {
+                const noStore = document.createElement('span');
+                noStore.className = 'store-item';
+                noStore.textContent = 'Нет в выбранных магазинах';
+                noStore.style.background = '#ffe1e1';
+                noStore.style.borderColor = '#ff9f9f';
+                storeListDiv.appendChild(noStore);
+            } else {
+                const sortedStores = Array.from(availableStores).sort((a, b) => {
+                    const nameA = STORES.find(s => s.id === a)?.name || a;
+                    const nameB = STORES.find(s => s.id === b)?.name || b;
+                    return nameA.localeCompare(nameB);
+                });
+                sortedStores.forEach(storeId => {
+                    const storeName = STORES.find(s => s.id === storeId)?.name || storeId;
+                    const storeSpan = document.createElement('span');
+                    storeSpan.className = 'store-item';
+                    storeSpan.textContent = storeName;
+                    storeListDiv.appendChild(storeSpan);
+                });
+            }
+
+            storesSection.appendChild(storeListDiv);
+
+            const portionInfo = document.createElement('div');
+            portionInfo.style.fontSize = '0.78rem';
+            portionInfo.style.marginTop = '0.6rem';
+            portionInfo.style.color = '#7a4d00';
+            const ratio = recipe.basePortions / targetPortions;
+            if (Math.abs(ratio - 1) < 0.3) {
+                portionInfo.textContent = `✅ Идеально для ~${targetPortions.toFixed(1)} порций`;
+            } else if (ratio > 1.3) {
+                portionInfo.textContent = `📦 Хватит с запасом (на ${recipe.basePortions} порц.)`;
+            } else {
+                portionInfo.textContent = `⚠️ Может не хватить (на ${recipe.basePortions} порц.)`;
+            }
+
+            card.appendChild(title);
+            card.appendChild(mealBadge);
+            card.appendChild(desc);
+            card.appendChild(badgeContainer);
+            card.appendChild(storesSection);
+            card.appendChild(portionInfo);
+
+            recipesListEl.appendChild(card);
+        });
+    }
+
+    function resetExclusions() {
+        excludedSet.clear();
+        renderIngredients();
+        renderRecipes();
+    }
+
+    function init() {
+        renderStores();
+        renderIngredients();
+        renderMeals();
+        initCounters();
+        renderRecipes();
+
+        resetExclusionsBtn.addEventListener('click', resetExclusions);
+    }
+
+    init();
+</script>
+</body>
+</html>
