@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="theme-color" content="#ffb347">
+<meta name="description" content="Умный конструктор рецептов с учётом магазинов, исключений, КБЖУ и ИИ">
+<title>Умный конструктор рецептов</title>
+<link rel="manifest" href="manifest.json">
+<style>
+/* ==================== ПЕРЕМЕННЫЕ ТЕМ ==================== */
+:root {
+    --bg: #f9f7f3;
+    --bg-panel: #ffffff;
+    --bg-card: #fdfcf9;
+    --bg-input: #f7f5f1;
+    --bg-tag: #f0f0f0;
+    --bg-tag-hover: #e6e6e6;
+    --bg-hint: #fef7e9;
+    --border: #edeae4;
+    --border-light: #e0dbd2;
+    --text: #2d2d2d;
+    --text-muted: #5e5e5e;
+    --text-dim: #888;
+    --accent: #ffb347;
+    --accent-dark: #ff9a2e;
+    --accent-text: #7a4d00;
+    --blue: #7aa9e6;
+    --blue-dark: #5b8dd4;
+    --blue-bg: #f4f8fe;
+    --blue-text: #2c577c;
+    --green: #6cbf6c;
+    --green-bg: #e6f3e6;
+    --green-text: #1f4f1f;
+    --red-bg: #ffe1e1;
+    --red-text: #b33a3a;
+    --red-border: #ff9f9f;
+    --shadow: 0 4px 14px rgba(0,0,0,.04);
+}
+
+[data-theme="dark"] {
+    --bg: #1a1a1e;
+    --bg-panel: #26262c;
+    --bg-card: #2d2d34;
+    --bg-input: #32323a;
+    --bg-tag: #3a3a42;
+    --bg-tag-hover: #45454f;
+    --bg-hint: #3d3520;
+    --border: #3a3a42;
+    --border-light: #45454f;
+    --text: #e8e8ea;
+    --text-muted: #b0b0b8;
+    --text-dim: #888;
+    --accent: #ffb347;
+    --accent-dark: #ff9a2e;
+    --accent-text: #ffd88a;
+    --blue: #7aa9e6;
+    --blue-dark: #5b8dd4;
+    --blue-bg: #2a3547;
+    --blue-text: #a8c8f0;
+    --green: #6cbf6c;
+    --green-bg: #2a3f2a;
+    --green-text: #a8dca8;
+    --red-bg: #4a2a2a;
+    --red-text: #ffb0b0;
+    --red-border: #8a4040;
+    --shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+    font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 1rem;
+    overscroll-behavior-y: contain;
+    transition: background-color .2s, color .2s;
+}
+.container { max-width: 1400px; margin: 0 auto; width: 100%; }
+
+/* ==================== ШАПКА ==================== */
+.header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: .3rem;
+}
+h1 {
+    font-size: clamp(1.2rem, 3.8vw, 1.8rem);
+    font-weight: 600;
+    letter-spacing: -.5px;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    line-height: 1.2;
+    flex: 1;
+    min-width: 0;
+}
+.header-actions {
+    display: flex;
+    gap: .4rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+.icon-btn {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: .15s;
+    color: var(--text);
+    padding: 0;
+    font-family: inherit;
+    position: relative;
+}
+.icon-btn:active { transform: scale(.92); }
+.icon-btn.badge::after {
+    content: attr(data-badge);
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--accent);
+    color: white;
+    font-size: .65rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid var(--bg);
+}
+.settings-btn {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: .4rem .9rem;
+    border-radius: 40px;
+    font-size: .78rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+    transition: .15s;
+    white-space: nowrap;
+}
+.settings-btn.has-key { border-color: var(--green); color: var(--green-text); }
+.settings-btn:active { transform: scale(.96); }
+
+.subhead {
+    color: var(--text-muted);
+    margin-bottom: 1.2rem;
+    border-left: 4px solid var(--accent);
+    padding-left: .8rem;
+    font-size: clamp(.82rem, 2.4vw, .98rem);
+}
+
+/* ==================== СЕТКА ==================== */
+.main-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.2fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+.panel {
+    background: var(--bg-panel);
+    border-radius: 20px;
+    padding: 1.2rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 1.2rem;
+    width: 100%;
+    transition: background-color .2s, border-color .2s;
+}
+.panel:last-child { margin-bottom: 0; }
+.panel h2 {
+    font-size: clamp(1rem, 2.8vw, 1.2rem);
+    font-weight: 600;
+    margin-bottom: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    color: var(--text);
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.panel h2 .h2-left { display: flex; align-items: center; gap: .4rem; }
+
+/* ==================== МАГАЗИНЫ ==================== */
+.store-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: .5rem;
+}
+.store-option {
+    background: var(--bg-tag);
+    border: 1px solid var(--border-light);
+    padding: .7rem .6rem;
+    border-radius: 40px;
+    font-size: clamp(.8rem, 2.4vw, .92rem);
+    cursor: pointer;
+    user-select: none;
+    transition: all .15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-align: center;
+    min-height: 42px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: inherit;
+}
+.store-option:active { transform: scale(.96); }
+.store-option.selected {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue-text);
+}
+.store-option.selected::before { content: "✓"; font-weight: 700; font-size: .8rem; }
+.store-option:not(.selected)::before { content: "＋"; font-size: .8rem; color: var(--text-dim); }
+
+/* ==================== ИНГРЕДИЕНТЫ ==================== */
+.ingredient-tags { display: flex; flex-wrap: wrap; gap: .45rem; }
+.tag {
+    background: var(--bg-tag);
+    border-radius: 30px;
+    padding: .55rem .95rem;
+    font-size: clamp(.78rem, 2.3vw, .9rem);
+    cursor: pointer;
+    transition: all .15s ease;
+    border: 1px solid transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 36px;
+    color: var(--text);
+    font-family: inherit;
+}
+.tag:active { transform: scale(.95); }
+.tag.excluded {
+    background: var(--red-bg);
+    border-color: var(--red-border);
+    color: var(--red-text);
+    text-decoration: line-through 1px var(--red-text);
+}
+.tag.excluded::before { content: "✕"; font-weight: 700; font-size: .7rem; color: var(--red-text); }
+.tag:not(.excluded)::before { content: "✓"; font-weight: 700; font-size: .7rem; color: var(--green); }
+
+/* ==================== ЛЮДИ ==================== */
+.people-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .8rem;
+    margin-bottom: .6rem;
+    flex-wrap: nowrap;
+}
+.people-label {
+    font-size: clamp(.85rem, 2.5vw, .95rem);
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+}
+.counter {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    background: var(--bg-input);
+    border-radius: 40px;
+    padding: .2rem;
+    border: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+.counter button {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-panel);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: .1s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    touch-action: manipulation;
+    user-select: none;
+    font-family: inherit;
+}
+.counter button:active { transform: scale(.92); }
+.counter span { min-width: 28px; text-align: center; font-weight: 600; font-size: 1rem; color: var(--text); }
+
+/* ==================== ПРИЁМЫ ПИЩИ ==================== */
+.meal-toggles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: .5rem;
+}
+.meal-btn {
+    background: var(--bg-tag);
+    border: 1px solid var(--border-light);
+    padding: .7rem .8rem;
+    border-radius: 40px;
+    font-size: clamp(.82rem, 2.4vw, .95rem);
+    cursor: pointer;
+    transition: .15s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 42px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--text);
+    font-family: inherit;
+}
+.meal-btn:active { transform: scale(.96); }
+.meal-btn.selected {
+    background: var(--bg-hint);
+    border-color: var(--accent);
+    color: var(--accent-text);
+}
+.meal-btn.selected::before { content: "✓"; font-weight: 700; font-size: .8rem; }
+.meal-btn:not(.selected)::before { content: "○"; font-size: .8rem; color: var(--text-dim); }
+
+/* ==================== ПОИСК И ФИЛЬТРЫ ==================== */
+.search-box {
+    display: flex;
+    gap: .4rem;
+    margin-bottom: .7rem;
+    align-items: center;
+}
+.search-input {
+    flex: 1;
+    padding: .6rem .9rem;
+    border: 1px solid var(--border-light);
+    border-radius: 40px;
+    font-size: .9rem;
+    font-family: inherit;
+    background: var(--bg-input);
+    color: var(--text);
+    min-height: 42px;
+    min-width: 0;
+}
+.search-input:focus { outline: none; border-color: var(--blue); background: var(--bg-panel); }
+.search-input::placeholder { color: var(--text-dim); }
+
+.time-filters {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: .7rem;
+}
+.time-btn {
+    background: var(--bg-tag);
+    border: 1px solid var(--border-light);
+    padding: .4rem .8rem;
+    border-radius: 30px;
+    font-size: .78rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    transition: .15s;
+    min-height: 32px;
+}
+.time-btn.selected {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue-text);
+    font-weight: 500;
+}
+
+/* ==================== РЕЦЕПТЫ ==================== */
+.recipes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+.recipe-card {
+    background: var(--bg-card);
+    border-radius: 18px;
+    padding: 1.1rem 1.1rem .9rem;
+    border: 1px solid var(--border);
+    transition: .15s;
+    content-visibility: auto;
+    contain-intrinsic-size: 0 400px;
+    position: relative;
+}
+.recipe-card.ai-generated {
+    border-color: var(--blue);
+    background: linear-gradient(135deg, var(--blue-bg) 0%, var(--bg-card) 100%);
+}
+.recipe-card.favorite {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+.recipe-header {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: .3rem;
+}
+.recipe-header h3 {
+    font-size: clamp(1rem, 2.8vw, 1.15rem);
+    font-weight: 600;
+    line-height: 1.25;
+    flex: 1;
+    min-width: 0;
+    color: var(--text);
+}
+.fav-btn {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: .2rem;
+    line-height: 1;
+    transition: .15s;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+.fav-btn.active { color: #e74c3c; }
+.fav-btn:active { transform: scale(.85); }
+
+.ai-label {
+    display: inline-block;
+    background: var(--blue);
+    color: white;
+    border-radius: 30px;
+    padding: .15rem .7rem;
+    font-size: .7rem;
+    font-weight: 600;
+    margin-bottom: .4rem;
+    letter-spacing: .3px;
+}
+.recipe-desc {
+    font-size: clamp(.82rem, 2.3vw, .92rem);
+    color: var(--text-muted);
+    margin-bottom: .7rem;
+}
+.meal-badge {
+    display: inline-block;
+    background: var(--blue-bg);
+    color: var(--blue-text);
+    border-radius: 30px;
+    padding: .15rem .7rem;
+    font-size: .75rem;
+    margin-bottom: .5rem;
+    font-weight: 500;
+}
+.kbju-badge {
+    display: inline-flex;
+    gap: .5rem;
+    background: var(--green-bg);
+    color: var(--green-text);
+    border-radius: 30px;
+    padding: .2rem .8rem;
+    font-size: .72rem;
+    margin-bottom: .6rem;
+    font-weight: 500;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.kbju-badge .kbju-item { white-space: nowrap; }
+.kbju-badge .kbju-label { opacity: .75; }
+
+.ingredients-badge {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-bottom: .8rem;
+}
+.badge {
+    background: var(--green-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 30px;
+    padding: .2rem .7rem;
+    font-size: clamp(.72rem, 2.1vw, .8rem);
+    color: var(--green-text);
+}
+.stores-section {
+    background: var(--blue-bg);
+    border-radius: 12px;
+    padding: .7rem .8rem;
+    border-left: 4px solid var(--blue);
+}
+.stores-section p {
+    font-size: clamp(.78rem, 2.2vw, .85rem);
+    font-weight: 600;
+    margin-bottom: .4rem;
+    color: var(--blue-text);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+.store-list { display: flex; flex-wrap: wrap; gap: .35rem .5rem; }
+.store-item {
+    font-size: clamp(.72rem, 2.1vw, .82rem);
+    background: var(--bg-panel);
+    padding: .15rem .65rem;
+    border-radius: 50px;
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--blue-text);
+}
+.store-item::before { content: "📍"; font-size: .65rem; }
+
+.empty-state {
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 2rem 1rem;
+    text-align: center;
+    background: var(--bg-card);
+    border-radius: 18px;
+    border: 1px dashed var(--border-light);
+    font-size: clamp(.85rem, 2.4vw, .95rem);
+}
+.portion-hint {
+    font-size: clamp(.78rem, 2.2vw, .88rem);
+    background: var(--bg-hint);
+    border-radius: 12px;
+    padding: .55rem .9rem;
+    margin-top: .9rem;
+    color: var(--accent-text);
+    border: 1px solid var(--accent);
+    line-height: 1.4;
+}
+.portion-info {
+    font-size: .78rem;
+    margin-top: .6rem;
+    color: var(--accent-text);
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: .8rem;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.reset-btn {
+    background: none;
+    border: 1px solid var(--border-light);
+    padding: .55rem 1rem;
+    border-radius: 40px;
+    font-size: clamp(.78rem, 2.2vw, .85rem);
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: .1s;
+    min-height: 38px;
+    touch-action: manipulation;
+    font-family: inherit;
+}
+.reset-btn:active { transform: scale(.96); }
+
+/* ==================== РАСКРЫТЫЙ РЕЦЕПТ ==================== */
+.toggle-recipe-btn {
+    width: 100%;
+    margin-top: .9rem;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color: white;
+    border: none;
+    padding: .75rem 1rem;
+    border-radius: 40px;
+    font-size: clamp(.85rem, 2.4vw, .95rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    font-family: inherit;
+}
+.toggle-recipe-btn:active { transform: scale(.97); }
+.toggle-recipe-btn.opened {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+}
+.recipe-details {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-light);
+    animation: slideDown .25s ease-out;
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.recipe-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+    margin-bottom: 1rem;
+    padding: .6rem .8rem;
+    background: var(--bg-input);
+    border-radius: 12px;
+    font-size: clamp(.78rem, 2.2vw, .88rem);
+    color: var(--text-muted);
+}
+.recipe-meta span { display: flex; align-items: center; gap: 4px; }
+.recipe-section-title {
+    font-size: clamp(.9rem, 2.5vw, 1rem);
+    font-weight: 600;
+    color: var(--text);
+    margin: .8rem 0 .5rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ingredients-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    background: var(--bg-input);
+    border-radius: 12px;
+    padding: .7rem .9rem;
+}
+.ingredients-list li {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(.8rem, 2.3vw, .9rem);
+    padding: .25rem 0;
+    border-bottom: 1px dashed var(--border-light);
+}
+.ingredients-list li:last-child { border-bottom: none; }
+.ingredients-list .ing-name { color: var(--text); }
+.ingredients-list .ing-qty { color: var(--accent-text); font-weight: 600; white-space: nowrap; margin-left: .5rem; }
+.steps-list {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+.steps-list li {
+    counter-increment: step;
+    position: relative;
+    padding: .6rem .8rem .6rem 2.6rem;
+    background: var(--bg-input);
+    border-radius: 12px;
+    font-size: clamp(.8rem, 2.3vw, .9rem);
+    line-height: 1.45;
+    color: var(--text);
+}
+.steps-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: .6rem;
+    top: .6rem;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .75rem;
+    font-weight: 700;
+}
+.tip-box {
+    background: var(--green-bg);
+    border-left: 4px solid var(--green);
+    border-radius: 10px;
+    padding: .6rem .8rem;
+    font-size: clamp(.78rem, 2.2vw, .85rem);
+    color: var(--green-text);
+    margin-top: .8rem;
+    line-height: 1.4;
+}
+
+/* ==================== ДЕЙСТВИЯ РЕЦЕПТА ==================== */
+.recipe-actions {
+    display: flex;
+    gap: .4rem;
+    margin-top: .7rem;
+    flex-wrap: wrap;
+}
+.recipe-action-btn {
+    background: var(--bg-tag);
+    border: 1px solid var(--border-light);
+    padding: .45rem .8rem;
+    border-radius: 30px;
+    font-size: .78rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    transition: .15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 34px;
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+}
+.recipe-action-btn:active { transform: scale(.96); }
+.recipe-action-btn.active {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue-text);
+}
+
+/* ==================== ТАЙМЕР ==================== */
+.timer-box {
+    background: var(--bg-input);
+    border-radius: 12px;
+    padding: .8rem;
+    margin-top: .8rem;
+    text-align: center;
+    border: 1px solid var(--border-light);
+}
+.timer-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-text);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: .5rem;
+}
+.timer-controls { display: flex; gap: .4rem; justify-content: center; flex-wrap: wrap; }
+.timer-btn {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-light);
+    padding: .4rem .9rem;
+    border-radius: 30px;
+    font-size: .8rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+}
+.timer-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* ==================== AI ПАНЕЛЬ ==================== */
+.ai-panel {
+    background: linear-gradient(135deg, var(--blue-bg) 0%, var(--bg-panel) 100%);
+    border: 1px solid var(--blue);
+    border-radius: 20px;
+    padding: 1.2rem;
+    margin-bottom: 1.2rem;
+}
+.ai-panel h2 { color: var(--blue-text); margin-bottom: .5rem; }
+.ai-desc { font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4; }
+.ai-generate-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+    color: white;
+    border: none;
+    padding: .85rem 1.2rem;
+    border-radius: 40px;
+    font-size: clamp(.9rem, 2.5vw, 1rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    font-family: inherit;
+}
+.ai-generate-btn:active { transform: scale(.97); }
+.ai-generate-btn:disabled { opacity: .6; cursor: wait; transform: none; }
+.ai-generate-btn .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-error {
+    background: var(--red-bg);
+    border-left: 4px solid var(--red-border);
+    border-radius: 10px;
+    padding: .7rem .9rem;
+    font-size: .82rem;
+    color: var(--red-text);
+    margin-top: .8rem;
+    line-height: 1.4;
+}
+.ai-usage { font-size: .75rem; color: var(--text-dim); margin-top: .6rem; text-align: center; }
+
+/* ==================== МОДАЛЬНОЕ ОКНО ==================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn .2s;
+}
+.modal-overlay.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+    background: var(--bg-panel);
+    color: var(--text);
+    border-radius: 20px;
+    padding: 1.5rem;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn .25s ease-out;
+}
+@keyframes modalIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.modal h3 { font-size: 1.2rem; margin-bottom: .5rem; display: flex; align-items: center; gap: 6px; }
+.modal p { font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
+.modal label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .3rem; color: var(--text); }
+.modal input, .modal select {
+    width: 100%;
+    padding: .7rem .9rem;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    font-size: .9rem;
+    font-family: inherit;
+    margin-bottom: .9rem;
+    background: var(--bg-input);
+    color: var(--text);
+}
+.modal input:focus, .modal select:focus { outline: none; border-color: var(--blue); background: var(--bg-panel); }
+.modal-info {
+    background: var(--blue-bg);
+    border-radius: 10px;
+    padding: .7rem .9rem;
+    font-size: .78rem;
+    color: var(--blue-text);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+.modal-info a { color: var(--blue-text); font-weight: 600; }
+.modal-actions { display: flex; gap: .6rem; margin-top: .5rem; }
+.modal-btn {
+    flex: 1;
+    padding: .75rem;
+    border-radius: 40px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: .15s;
+    min-height: 44px;
+    font-family: inherit;
+}
+.modal-btn.primary { background: var(--blue); color: white; }
+.modal-btn.secondary { background: var(--bg-tag); color: var(--text); }
+.modal-btn.danger { background: var(--red-bg); color: var(--red-text); }
+
+/* ==================== СПИСОК ПОКУПОК ==================== */
+.shopping-item {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem .7rem;
+    background: var(--bg-input);
+    border-radius: 10px;
+    margin-bottom: .35rem;
+    font-size: .88rem;
+}
+.shopping-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+}
+.shopping-item label {
+    flex: 1;
+    cursor: pointer;
+    min-width: 0;
+    word-break: break-word;
+}
+.shopping-item input[type="checkbox"]:checked + label {
+    text-decoration: line-through;
+    color: var(--text-dim);
+}
+.shopping-store-title {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--blue-text);
+    margin: .8rem 0 .4rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.shopping-store-title:first-child { margin-top: 0; }
+.shopping-empty {
+    text-align: center;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 1.5rem 1rem;
+    font-size: .9rem;
+}
+
+/* ==================== УВЕДОМЛЕНИЯ ==================== */
+.notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--text);
+    color: var(--bg-panel);
+    padding: .7rem 1.2rem;
+    border-radius: 40px;
+    font-size: .85rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    transition: transform .3s ease;
+    z-index: 2000;
+    max-width: 90vw;
+    text-align: center;
+    pointer-events: none;
+}
+.notification.show { transform: translateX(-50%) translateY(0); }
+.notification.error { background: var(--red-text); color: white; }
+.notification.success { background: var(--green); color: white; }
+
+/* ==================== СКРОЛЛБАР ==================== */
+.recipes-list::-webkit-scrollbar,
+.modal::-webkit-scrollbar { width: 6px; }
+.recipes-list::-webkit-scrollbar-thumb,
+.modal::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 10px; }
+.recipes-list::-webkit-scrollbar-track { background: transparent; }
+
+/* ==================== АДАПТИВ ==================== */
+@media (max-width: 1000px) {
+    .main-grid { grid-template-columns: 1fr; gap: 1rem; }
+    .recipes-list { max-height: none; overflow-y: visible; }
+}
+@media (max-width: 600px) {
+    body { padding: .7rem; }
+    .panel { padding: 1rem .9rem; border-radius: 16px; margin-bottom: .9rem; }
+    .ai-panel { padding: 1rem .9rem; }
+    .store-grid { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: .4rem; }
+    .store-option { padding: .6rem .4rem; min-height: 40px; font-size: .82rem; }
+    .tag { padding: .5rem .8rem; min-height: 34px; font-size: .8rem; }
+    .counter button { width: 36px; height: 36px; font-size: 1.15rem; }
+    .meal-toggles { grid-template-columns: 1fr 1fr 1fr; gap: .4rem; }
+    .meal-btn { padding: .6rem .3rem; font-size: .8rem; min-height: 40px; }
+    .recipe-card { padding: .95rem .9rem .8rem; border-radius: 16px; }
+    .actions { flex-direction: column; align-items: stretch; }
+    .reset-btn { width: 100%; text-align: center; }
+    h1 { font-size: 1.2rem; }
+    .subhead { font-size: .82rem; padding-left: .6rem; }
+    .icon-btn { width: 38px; height: 38px; font-size: 1rem; }
+    .recipe-action-btn { font-size: .74rem; padding: .4rem .6rem; }
+}
+@media (max-width: 380px) {
+    body { padding: .5rem; }
+    .panel { padding: .85rem .75rem; }
+    .store-grid { grid-template-columns: repeat(2, 1fr); }
+    .people-label { font-size: .8rem; }
+    .counter button { width: 34px; height: 34px; }
+    .counter span { min-width: 24px; font-size: .9rem; }
+    .meal-toggles { grid-template-columns: 1fr; }
+    .recipe-actions { flex-direction: column; }
+}
+@media (min-width: 1600px) {
+    html { font-size: 17px; }
+    .container { max-width: 1500px; }
+    .panel { padding: 1.5rem; }
+}
+
+/* ==================== ПЕЧАТЬ ==================== */
+@media print {
+    body { background: white; color: black; padding: 0; }
+    .header-actions, .panel:not(.print-target), .ai-panel,
+    .actions, .toggle-recipe-btn, .recipe-actions, .timer-box,
+    .settings-btn, .icon-btn, .subhead { display: none !important; }
+    .main-grid { grid-template-columns: 1fr; }
+    .recipe-card { border: 1px solid #ccc; page-break-inside: avoid; }
+    .print-hide { display: none !important; }
+}
+
+/* ==================== SAFE AREA ==================== */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+        padding-top: max(1rem, env(safe-area-inset-top));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* ==================== HOVER ==================== */
+@media (hover: hover) {
+    .store-option:hover:not(.selected) { background: var(--bg-tag-hover); }
+    .tag:hover:not(.excluded) { background: var(--bg-tag-hover); }
+    .meal-btn:hover:not(.selected) { background: var(--bg-tag-hover); }
+    .counter button:hover { background: var(--bg-tag-hover); }
+    .reset-btn:hover { background: var(--bg-tag-hover); }
+    .toggle-recipe-btn:hover { filter: brightness(1.05); }
+    .settings-btn:hover { background: var(--bg-tag-hover); }
+    .icon-btn:hover { background: var(--bg-tag-hover); }
+    .recipe-action-btn:hover { background: var(--bg-tag-hover); }
+    .fav-btn:hover { transform: scale(1.15); }
+    .time-btn:hover:not(.selected) { background: var(--bg-tag-hover); }
+}
+
+/* ==================== ФОКУС ==================== */
+button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <!-- ШАПКА -->
+    <div class="header">
+        <h1><span>🍳</span> Умный конструктор рецептов</h1>
+        <div class="header-actions">
+            <button class="icon-btn" id="randomBtn" type="button" title="Удиви меня">🎲</button>
+            <button class="icon-btn" id="shoppingBtn" type="button" title="Список покупок">🛒</button>
+            <button class="icon-btn" id="themeBtn" type="button" title="Тема">🌙</button>
+            <button class="settings-btn" id="settingsBtn" type="button">
+                ⚙️ <span id="settingsBtnText">ИИ</span>
+            </button>
+        </div>
+    </div>
+    <div class="subhead">
+        Выберите магазины, исключите нелюбимые продукты, укажите едоков — получите рецепты с КБЖУ.
+    </div>
+
+    <div class="main-grid">
+        <!-- ЛЕВАЯ ПАНЕЛЬ -->
+        <div>
+            <div class="panel">
+                <h2><span class="h2-left">🏪 Магазины, где покупаете</span></h2>
+                <div class="store-grid" id="storeGrid"></div>
+                <div class="portion-hint" id="storeHint" style="display:none"></div>
+            </div>
+
+            <div class="panel">
+                <h2><span class="h2-left">🚫 Продукты, которые не едите</span></h2>
+                <div class="ingredient-tags" id="ingredientTags"></div>
+                <div class="actions">
+                    <span style="font-size:.82rem;color:var(--text-dim)" id="excludedCount">Исключено: 0</span>
+                    <button class="reset-btn" id="resetExclusions" type="button">Сбросить продукты</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2><span class="h2-left">👨‍👩‍👧‍👦 Кто будет есть</span></h2>
+                <div class="people-row">
+                    <span class="people-label">Взрослые</span>
+                    <div class="counter" data-type="adults">
+                        <button class="dec" type="button" aria-label="Уменьшить">−</button>
+                        <span class="count" id="adultsCount">2</span>
+                        <button class="inc" type="button" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="people-row">
+                    <span class="people-label">Дети 3–7 лет</span>
+                    <div class="counter" data-type="kidsSmall">
+                        <button class="dec" type="button" aria-label="Уменьшить">−</button>
+                        <span class="count" id="kidsSmallCount">0</span>
+                        <button class="inc" type="button" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="people-row">
+                    <span class="people-label">Дети 8–14 лет</span>
+                    <div class="counter" data-type="kidsBig">
+                        <button class="dec" type="button" aria-label="Уменьшить">−</button>
+                        <span class="count" id="kidsBigCount">0</span>
+                        <button class="inc" type="button" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="people-row">
+                    <span class="people-label">Подростки 15+</span>
+                    <div class="counter" data-type="teens">
+                        <button class="dec" type="button" aria-label="Уменьшить">−</button>
+                        <span class="count" id="teensCount">0</span>
+                        <button class="inc" type="button" aria-label="Увеличить">+</button>
+                    </div>
+                </div>
+                <div class="portion-hint" id="peopleHint">
+                    🍽️ Порций: примерно <strong id="portionCount">2</strong> взрослых
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2><span class="h2-left">🕒 Приёмы пищи</span></h2>
+                <div class="meal-toggles" id="mealToggles">
+                    <div class="meal-btn selected" data-meal="завтрак">Завтрак</div>
+                    <div class="meal-btn selected" data-meal="обед">Обед</div>
+                    <div class="meal-btn selected" data-meal="ужин">Ужин</div>
+                </div>
+            </div>
+
+            <div class="ai-panel">
+                <h2><span class="h2-left">🤖 ИИ-повар</span></h2>
+                <div class="ai-desc">
+                    ИИ придумает новый рецепт с учётом ваших магазинов, исключений, порций и приёмов пищи.
+                </div>
+                <button class="ai-generate-btn" id="aiGenerateBtn" type="button">
+                    ✨ Сгенерировать рецепт
+                </button>
+                <div id="aiErrorContainer"></div>
+                <div class="ai-usage" id="aiUsage"></div>
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ -->
+        <div class="panel">
+            <h2>
+                <span class="h2-left">📖 Рецепты <span style="font-size:.85rem;font-weight:400;color:var(--text-dim)" id="recipeCount"></span></span>
+            </h2>
+
+            <div class="search-box">
+                <input type="search" class="search-input" id="searchInput" placeholder="🔍 Поиск по названию или ингредиенту...">
+            </div>
+
+            <div class="time-filters" id="timeFilters">
+                <button class="time-btn selected" data-max="999" type="button">Любое</button>
+                <button class="time-btn" data-max="20" type="button">⏱️ До 20 мин</button>
+                <button class="time-btn" data-max="40" type="button">До 40 мин</button>
+                <button class="time-btn" data-max="60" type="button">До 60 мин</button>
+            </div>
+
+            <div class="time-filters" id="viewFilters" style="margin-bottom:.9rem">
+                <button class="time-btn selected" data-view="all" type="button">Все</button>
+                <button class="time-btn" data-view="fav" type="button">❤️ Избранное</button>
+            </div>
+
+            <div class="recipes-list" id="recipesList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- УВЕДОМЛЕНИЕ -->
+<div class="notification" id="notification"></div>
+
+<!-- МОДАЛКА НАСТРОЕК ИИ -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h3>⚙️ Настройки ИИ</h3>
+        <p>Для работы ИИ-повара нужен ключ OpenRouter. Ключ хранится <strong>только в вашем браузере</strong>.</p>
+        <div class="modal-info">
+            🔑 Получить ключ: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a><br>
+            💡 Бесплатные модели помечены «free».
+        </div>
+        <label for="apiKeyInput">API-ключ OpenRouter</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
+        <label for="modelSelect">Модель</label>
+        <select id="modelSelect">
+            <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (бесплатно)</option>
+            <option value="google/gemini-flash-1.5">Gemini Flash 1.5 (дёшево)</option>
+            <option value="openai/gpt-4o-mini">GPT-4o mini (дёшево)</option>
+            <option value="anthropic/claude-3.5-haiku">Claude 3.5 Haiku</option>
+        </select>
+        <div class="modal-actions">
+            <button class="modal-btn secondary" id="modalCancel" type="button">Отмена</button>
+            <button class="modal-btn danger" id="modalClear" type="button">Удалить</button>
+            <button class="modal-btn primary" id="modalSave" type="button">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА СПИСКА ПОКУПОК -->
+<div class="modal-overlay" id="shoppingOverlay">
+    <div class="modal">
+        <h3>🛒 Список покупок</h3>
+        <p>Собирает ингредиенты из всех открытых рецептов, сгруппированные по магазинам.</p>
+        <div id="shoppingList"></div>
+        <div class="modal-actions" style="margin-top:1rem">
+            <button class="modal-btn secondary" id="shoppingClose" type="button">Закрыть</button>
+            <button class="modal-btn danger" id="shoppingClear" type="button">Очистить</button>
+        </div>
+    </div>
+</div>
+
+<!-- JS будет добавлен в следующем сообщении -->
+<script>
+'use strict';
+
+// ==================== БАЗА КБЖУ ====================
+// Значения на 100 г продукта: [ккал, белки, жиры, углеводы]
+// Для яиц — на 1 шт (~55 г), для чеснока — на 1 зубчик (~3 г)
+const KBJU_DB = {
+    "курица": [165, 31, 3.6, 0],
+    "говядина": [187, 26, 9, 0],
+    "свинина": [263, 27, 17, 0],
+    "рыба": [140, 20, 6, 0],
+    "морепродукты": [95, 18, 1.5, 2],
+    "яйца": [78, 6.3, 5.3, 0.6],           // на 1 шт
+    "молоко": [61, 3.2, 3.5, 4.8],
+    "сыр": [370, 25, 29, 0],
+    "творог": [98, 18, 2, 3.4],
+    "сливки": [205, 2.5, 20, 4],
+    "пшеничная мука": [342, 10, 1.2, 70],
+    "дрожжи": [105, 12.7, 2.7, 2.4],
+    "сахар": [398, 0, 0, 99.8],
+    "мёд": [304, 0.3, 0, 82],
+    "орехи": [607, 20, 54, 13],
+    "грибы": [22, 3.1, 1, 0.3],
+    "лук": [41, 1.4, 0.2, 9.5],
+    "чеснок": [4.5, 0.2, 0, 1],            // на 1 зубчик
+    "помидоры": [20, 1.1, 0.2, 4],
+    "картофель": [77, 2, 0.1, 17],
+    "рис": [344, 6.7, 0.7, 79],
+    "макароны": [350, 12, 1.5, 71],
+    "баклажаны": [24, 1.2, 0.1, 5],
+    "капуста": [28, 1.8, 0.1, 5.8],
+    "морковь": [35, 1.3, 0.1, 7],
+    "кинза": [23, 2.1, 0.5, 3.7],
+    "петрушка": [47, 3.7, 0.4, 7.6],
+    "укроп": [43, 3.5, 1.1, 6.3],
+    "базилик": [23, 3.2, 0.6, 2.6],
+    "сельдерей": [16, 0.9, 0.2, 2.1],
+    "болгарский перец": [27, 1.3, 0, 5.3],
+    "кабачки": [24, 0.6, 0.3, 4.6],
+    "тыква": [26, 1, 0.1, 4.4],
+    "свёкла": [43, 1.6, 0.2, 9.6],
+    "редис": [16, 0.7, 0.1, 3.4],
+    "оливковое масло": [898, 0, 99.8, 0],
+    "растительное масло": [899, 0, 100, 0],
+    "масло": [748, 0.5, 82.5, 0.8],
+    "соль": [0, 0, 0, 0],
+    "перец": [255, 10, 3.3, 38],
+    "вода": [0, 0, 0, 0]
+};
+
+// ==================== ДАННЫЕ ====================
+const STORES = Object.freeze([
+    { id: 'chizhik', name: 'Чижик' },
+    { id: 'pyaterochka', name: 'Пятёрочка' },
+    { id: 'magnit', name: 'Магнит' },
+    { id: 'kb', name: 'КБ' },
+    { id: 'vkusvill', name: 'ВкусВилл' },
+    { id: 'auchan', name: 'Ашан' }
+]);
+
+const ALL_INGREDIENTS = Object.freeze([
+    "курица","говядина","свинина","рыба","морепродукты",
+    "яйца","молоко","сыр","творог","сливки",
+    "пшеничная мука","дрожжи","сахар","мёд","орехи",
+    "грибы","лук","чеснок","помидоры","картофель",
+    "рис","макароны","баклажаны","капуста","морковь",
+    "кинза","петрушка","укроп","базилик","сельдерей",
+    "болгарский перец","кабачки","тыква","свёкла","редис"
+]);
+
+const RECIPES = Object.freeze([
+    { id:1, name:"Куриный суп с рисом и овощами", description:"Лёгкий и сытный суп, готовится за 40 минут.", meal:["обед","ужин"], cookingTime:40, ingredients:["курица","рис","морковь","лук","картофель","чеснок","петрушка","вода","соль"], basePortions:4, gramsPerPortion:{"курица":120,"рис":30,"морковь":50,"лук":30,"картофель":100,"чеснок":3,"петрушка":5,"вода":500,"соль":2}, steps:["Курицу промойте, залейте холодной водой (2 л) и доведите до кипения. Снимите пену.","Варите курицу на медленном огне 25 минут, затем выньте и нарежьте кусочками.","Картофель, морковь и лук нарежьте кубиками, добавьте в бульон.","Добавьте промытый рис и варите 12 минут.","Верните курицу в кастрюлю, добавьте измельчённый чеснок, соль и перец по вкусу.","Варите ещё 3–4 минуты, снимите с огня и посыпьте рубленой петрушкой."], tip:"Для более наваристого бульона варите курицу на самом маленьком огне — так он останется прозрачным.", storeMap:{"курица":["pyaterochka","magnit","vkusvill","auchan"],"рис":["pyaterochka","magnit","auchan"],"морковь":["pyaterochka","magnit","vkusvill","chizhik"],"лук":["pyaterochka","magnit","auchan","chizhik"],"картофель":["pyaterochka","magnit","vkusvill","chizhik"],"чеснок":["magnit","auchan","vkusvill"],"петрушка":["vkusvill","auchan","magnit"]} },
+    { id:2, name:"Овощное рагу с капустой и грибами", description:"Вегетарианское блюдо, богатое клетчаткой.", meal:["обед","ужин"], cookingTime:35, ingredients:["капуста","грибы","морковь","лук","помидоры","чеснок","картофель","масло"], basePortions:4, gramsPerPortion:{"капуста":150,"грибы":100,"морковь":60,"лук":40,"помидоры":80,"чеснок":3,"картофель":100,"масло":15}, steps:["Лук и морковь нарежьте, обжарьте на масле 5 минут до золотистости.","Грибы нарежьте пластинками, добавьте к луку и жарьте ещё 7 минут.","Капусту нашинкуйте, картофель нарежьте кубиками, помидоры — дольками.","Добавьте капусту и картофель в сковороду, влейте 100 мл воды, тушите 15 минут под крышкой.","Добавьте помидоры, чеснок, соль, перец и тушите ещё 7–10 минут.","Дайте рагу настояться под крышкой 5 минут перед подачей."], tip:"Если грибы лесные — отварите их 15 минут заранее, чтобы убрать горечь.", storeMap:{"капуста":["pyaterochka","magnit","auchan","chizhik"],"грибы":["vkusvill","auchan","magnit"],"морковь":["pyaterochka","magnit","vkusvill","chizhik"],"лук":["pyaterochka","magnit","auchan","chizhik"],"помидоры":["vkusvill","pyaterochka","auchan"],"чеснок":["magnit","auchan","vkusvill"],"картофель":["pyaterochka","magnit","vkusvill","chizhik"]} },
+    { id:3, name:"Паста с баклажанами и томатами", description:"Итальянский ужин за 30 минут.", meal:["ужин","обед"], cookingTime:30, ingredients:["макароны","баклажаны","помидоры","чеснок","сыр","базилик","оливковое масло"], basePortions:3, gramsPerPortion:{"макароны":100,"баклажаны":120,"помидоры":100,"чеснок":3,"сыр":30,"базилик":5,"оливковое масло":10}, steps:["Отварите макароны в подсоленной воде до аль денте.","Баклажаны нарежьте кубиками, посолите и оставьте на 10 минут, затем отожмите.","Обжарьте баклажаны на разогретом масле до золотистой корочки (7–8 минут).","Добавьте к баклажанам чеснок и помидоры, тушите 5 минут.","Слейте макароны, добавьте их в сковороду, перемешайте.","Посыпьте тёртым сыром и базиликом, подавайте горячим."], tip:"Не переваривайте пасту — она должна быть слегка упругой.", storeMap:{"макароны":["magnit","pyaterochka","auchan","chizhik"],"баклажаны":["vkusvill","pyaterochka","auchan"],"помидоры":["vkusvill","pyaterochka","auchan"],"чеснок":["magnit","auchan","vkusvill"],"сыр":["magnit","pyaterochka","auchan"],"базилик":["vkusvill","auchan"]} },
+    { id:4, name:"Омлет с овощами и сыром", description:"Быстрый завтрак, подходит для низкоуглеводной диеты.", meal:["завтрак"], cookingTime:15, ingredients:["яйца","молоко","сыр","помидоры","лук","морковь","укроп","масло"], basePortions:2, gramsPerPortion:{"яйца":2,"молоко":50,"сыр":30,"помидоры":60,"лук":20,"морковь":30,"укроп":5,"масло":10}, steps:["Лук и морковь мелко нарежьте и обжарьте на масле 5 минут.","Помидоры нарежьте кубиками, добавьте к овощам, жарьте ещё 3 минуты.","Взбейте яйца с молоком, солью и перцем.","Залейте овощи яичной смесью, накройте крышкой и готовьте 5 минут.","Посыпьте тёртым сыром и укропом, дайте постоять 2 минуты.","Подавайте омлет сразу."], tip:"Чтобы омлет был пышным, готовьте его под крышкой и не перемешивайте.", storeMap:{"яйца":["magnit","pyaterochka","vkusvill","chizhik"],"молоко":["pyaterochka","magnit","auchan","chizhik"],"сыр":["magnit","pyaterochka","auchan"],"помидоры":["vkusvill","pyaterochka","auchan"],"лук":["pyaterochka","magnit","auchan","chizhik"],"морковь":["pyaterochka","magnit","vkusvill","chizhik"],"укроп":["vkusvill","auchan","magnit"]} },
+    { id:5, name:"Творожная запеканка с ягодами", description:"Нежный десерт без муки и сахара.", meal:["завтрак","ужин"], cookingTime:50, ingredients:["творог","яйца","мёд","орехи","сливки"], basePortions:4, gramsPerPortion:{"творог":150,"яйца":1,"мёд":20,"орехи":20,"сливки":40}, steps:["Разогрейте духовку до 180°C.","Творог протрите через сито или взбейте блендером.","Добавьте яйца, мёд и сливки, перемешайте.","Форму смажьте маслом, выложите массу.","Запекайте 35–40 минут до золотистой корочки.","Посыпьте орехами и дайте остыть 10 минут."], tip:"Если творог сухой — добавьте ещё 1–2 ст. ложки сливок.", storeMap:{"творог":["vkusvill","magnit","pyaterochka"],"яйца":["magnit","pyaterochka","vkusvill","chizhik"],"мёд":["auchan","vkusvill","magnit"],"орехи":["vkusvill","auchan","magnit"],"сливки":["pyaterochka","magnit","auchan"]} },
+    { id:6, name:"Салат с курицей, сыром и помидорами", description:"Сытный салат для обеда или лёгкого ужина.", meal:["обед","ужин"], cookingTime:25, ingredients:["курица","сыр","помидоры","чеснок","лук","кинза","оливковое масло"], basePortions:3, gramsPerPortion:{"курица":120,"сыр":40,"помидоры":100,"чеснок":3,"лук":30,"кинза":5,"оливковое масло":10}, steps:["Курицу отварите или запеките до готовности, остудите, нарежьте кубиками.","Помидоры нарежьте кубиками, лук — тонкими полукольцами.","Сыр натрите на крупной тёрке.","Смешайте курицу, помидоры, лук и сыр.","Заправьте маслом, добавьте чеснок, соль и перец.","Посыпьте кинзой и подавайте."], tip:"Для лёгкости запеките курицу в духовке вместо обжарки.", storeMap:{"курица":["pyaterochka","magnit","vkusvill","auchan"],"сыр":["magnit","pyaterochka","auchan"],"помидоры":["vkusvill","pyaterochka","auchan"],"чеснок":["magnit","auchan","vkusvill"],"лук":["pyaterochka","magnit","auchan","chizhik"],"кинза":["vkusvill","auchan"]} },
+    { id:7, name:"Рис с грибами и луком", description:"Простое и сытное блюдо для всей семьи.", meal:["обед","ужин"], cookingTime:35, ingredients:["рис","грибы","лук","морковь","чеснок","петрушка","масло"], basePortions:4, gramsPerPortion:{"рис":80,"грибы":100,"лук":40,"морковь":50,"чеснок":3,"петрушка":5,"масло":15}, steps:["Рис промойте до прозрачной воды.","Лук и морковь нарежьте, обжарьте на масле 5 минут.","Грибы нарежьте пластинками, добавьте, жарьте 7 минут.","Добавьте рис, перемешайте, залейте водой (1:2).","Доведите до кипения, накройте крышкой, готовьте 18 минут.","Добавьте чеснок, соль, перец, дайте настояться 5 минут.","Подавайте, посыпав петрушкой."], tip:"Не перемешивайте рис во время варки — он останется рассыпчатым.", storeMap:{"рис":["pyaterochka","magnit","auchan"],"грибы":["vkusvill","auchan","magnit"],"лук":["pyaterochka","magnit","auchan","chizhik"],"морковь":["pyaterochka","magnit","vkusvill","chizhik"],"чеснок":["magnit","auchan","vkusvill"],"петрушка":["vkusvill","auchan","magnit"]} },
+    { id:8, name:"Тыквенный крем-суп", description:"Нежный и полезный суп, особенно осенью.", meal:["обед","ужин"], cookingTime:40, ingredients:["тыква","морковь","лук","чеснок","сливки","масло","вода"], basePortions:4, gramsPerPortion:{"тыква":200,"морковь":60,"лук":40,"чеснок":3,"сливки":50,"масло":10,"вода":400}, steps:["Тыкву очистите, нарежьте кубиками.","Морковь и лук нарежьте, обжарьте на масле 5 минут.","Добавьте тыкву, залейте водой, чтобы она слегка покрывала овощи.","Варите 20 минут до мягкости.","Пробейте блендером до кремовой консистенции.","Влейте сливки, добавьте чеснок, соль, перец, прогрейте 2–3 минуты.","Подавайте с семечками или сухариками."], tip:"Для насыщенного вкуса запеките тыкву в духовке 25 минут.", storeMap:{"тыква":["vkusvill","auchan","magnit"],"морковь":["pyaterochka","magnit","vkusvill","chizhik"],"лук":["pyaterochka","magnit","auchan","chizhik"],"чеснок":["magnit","auchan","vkusvill"],"сливки":["pyaterochka","magnit","auchan"]} }
+]);
+
+const VALID_MEALS = ['завтрак','обед','ужин'];
+const STORAGE_KEYS = {
+    apiKey: 'ai_apiKey',
+    model: 'ai_model',
+    aiRecipes: 'ai_recipes',
+    state: 'recipe_state_v2',
+    favorites: 'recipe_favorites',
+    shopping: 'shopping_checked',
+    theme: 'theme'
+};
+
+// ==================== СОСТОЯНИЕ ====================
+const state = {
+    selectedStores: new Set(['pyaterochka','magnit']),
+    excluded: new Set(),
+    people: { adults:2, kidsSmall:0, kidsBig:0, teens:0 },
+    meals: new Set(['завтрак','обед','ужин']),
+    openRecipes: new Set(),
+    aiRecipes: [],
+    favorites: new Set(),
+    shoppingChecked: new Set(),
+    search: '',
+    maxTime: 999,
+    view: 'all',
+    config: { apiKey:'', model:'meta-llama/llama-3.1-8b-instruct:free' },
+    isGenerating: false,
+    timers: {}  // {recipeId: {remaining, interval}}
+};
+
+// ==================== УТИЛИТЫ ====================
+const $ = id => document.getElementById(id);
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeArray = v => Array.isArray(v) ? v : [];
+const safeObj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+const clamp = (n,min,max) => Math.min(Math.max(n,min),max);
+
+function getStoreName(id) {
+    const s = STORES.find(x => x.id === id);
+    return s ? s.name : id;
+}
+
+function getStoresForIngredient(recipe, ing) {
+    return safeArray(safeObj(recipe.storeMap)[ing]);
+}
+
+function getAdultEquiv() {
+    const p = state.people;
+    return p.adults + p.kidsSmall * 0.5 + p.kidsBig * 0.7 + p.teens * 1.0;
+}
+
+function getTargetPortions() {
+    return Math.max(1, Math.round(getAdultEquiv() * 10) / 10);
+}
+
+function debounce(fn, delay) {
+    let t = null;
+    return function(...args) {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => { t = null; fn.apply(this, args); }, delay);
+    };
+}
+
+let notifyTimer = null;
+function notify(message, type = 'info') {
+    const el = $('notification');
+    el.textContent = message;
+    el.className = 'notification show' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
+    if (notifyTimer) clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(() => { el.classList.remove('show'); notifyTimer = null; }, 2800);
+}
+
+// ==================== КБЖУ ====================
+function getRecipeKBJU(recipe, targetPortions) {
+    const ingredients = safeArray(recipe.ingredients);
+    const grams = safeObj(recipe.gramsPerPortion);
+    const basePortions = Number(recipe.basePortions) || 1;
+
+    let totalKcal = 0, totalProt = 0, totalFat = 0, totalCarb = 0;
+
+    ingredients.forEach(ing => {
+        const db = KBJU_DB[ing];
+        const perPortion = Number(grams[ing]) || 0;
+        if (!db || perPortion <= 0) return;
+
+        // Граммовка указана на 1 порцию, умножаем на количество порций
+        const totalGrams = perPortion * targetPortions;
+        const [kcal100, prot100, fat100, carb100] = db;
+
+        // Для яиц и чеснока значения в БД — на 1 шт, а не на 100 г
+        const isPiece = ing === 'яйца' || ing === 'чеснок';
+        const multiplier = isPiece ? totalGrams : totalGrams / 100;
+
+        totalKcal += kcal100 * multiplier;
+        totalProt += prot100 * multiplier;
+        totalFat += fat100 * multiplier;
+        totalCarb += carb100 * multiplier;
+    });
+
+    return {
+        kcal: Math.round(totalKcal),
+        prot: Math.round(totalProt * 10) / 10,
+        fat: Math.round(totalFat * 10) / 10,
+        carb: Math.round(totalCarb * 10) / 10
+    };
+}
+
+// ==================== PERSISTENCE ====================
+function saveState() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.state, JSON.stringify({
+            selectedStores: Array.from(state.selectedStores),
+            excluded: Array.from(state.excluded),
+            people: state.people,
+            meals: Array.from(state.meals),
+            favorites: Array.from(state.favorites)
+        }));
+    } catch (e) {}
+}
+
+function loadState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.state);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.selectedStores) && data.selectedStores.length > 0) {
+            const valid = data.selectedStores.filter(id => STORES.some(s => s.id === id));
+            if (valid.length > 0) state.selectedStores = new Set(valid);
+        }
+        if (Array.isArray(data.excluded)) {
+            state.excluded = new Set(data.excluded.filter(i => ALL_INGREDIENTS.includes(i)));
+        }
+        if (data.people && typeof data.people === 'object') {
+            ['adults','kidsSmall','kidsBig','teens'].forEach(k => {
+                const v = parseInt(data.people[k], 10);
+                if (Number.isFinite(v) && v >= 0) state.people[k] = clamp(v, 0, 20);
+            });
+        }
+        if (Array.isArray(data.meals) && data.meals.length > 0) {
+            const valid = data.meals.filter(m => VALID_MEALS.includes(m));
+            if (valid.length > 0) state.meals = new Set(valid);
+        }
+        if (Array.isArray(data.favorites)) {
+            state.favorites = new Set(data.favorites);
+        }
+    } catch (e) {}
+}
+
+function loadAIConfig() {
+    try {
+        state.config.apiKey = localStorage.getItem(STORAGE_KEYS.apiKey) || '';
+        state.config.model = localStorage.getItem(STORAGE_KEYS.model) || 'meta-llama/llama-3.1-8b-instruct:free';
+    } catch (e) {}
+}
+
+function loadAIRecipes() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.aiRecipes);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (Array.isArray(data)) {
+            state.aiRecipes = data.filter(r => r && typeof r === 'object' && r.name && Array.isArray(r.ingredients)).slice(0, 50);
+        }
+    } catch (e) { state.aiRecipes = []; }
+}
+
+function saveAIRecipes() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.aiRecipes, JSON.stringify(state.aiRecipes.slice(0, 50)));
+    } catch (e) {}
+}
+
+function loadShoppingChecked() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.shopping);
+        if (raw) state.shoppingChecked = new Set(JSON.parse(raw));
+    } catch (e) {}
+}
+
+function saveShoppingChecked() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.shopping, JSON.stringify(Array.from(state.shoppingChecked)));
+    } catch (e) {}
+}
+
+// ==================== ТЕМА ====================
+function loadTheme() {
+    try {
+        const t = localStorage.getItem(STORAGE_KEYS.theme);
+        if (t === 'dark' || t === 'light') return t;
+    } catch (e) {}
+    return 'light';
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    $('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+    // Меняем meta theme-color
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#1a1a1e' : '#ffb347');
+    try { localStorage.setItem(STORAGE_KEYS.theme, theme); } catch (e) {}
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// ==================== РЕНДЕР: МАГАЗИНЫ ====================
+function renderStores() {
+    const container = $('storeGrid');
+    if (container.children.length === STORES.length) {
+        Array.from(container.children).forEach((el, i) => {
+            const sel = state.selectedStores.has(STORES[i].id);
+            el.classList.toggle('selected', sel);
+            el.setAttribute('aria-pressed', sel);
+        });
+    } else {
+        const frag = document.createDocumentFragment();
+        STORES.forEach(store => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'store-option';
+            btn.textContent = store.name;
+            btn.dataset.storeId = store.id;
+            btn.addEventListener('click', () => toggleStore(store.id));
+            frag.appendChild(btn);
+        });
+        container.innerHTML = '';
+        container.appendChild(frag);
+        Array.from(container.children).forEach((el, i) => {
+            const sel = state.selectedStores.has(STORES[i].id);
+            el.classList.toggle('selected', sel);
+            el.setAttribute('aria-pressed', sel);
+        });
+    }
+    updateStoreHint();
+}
+
+function toggleStore(storeId) {
+    if (!STORES.some(s => s.id === storeId)) return;
+    if (state.selectedStores.has(storeId)) {
+        if (state.selectedStores.size > 1) state.selectedStores.delete(storeId);
+        else { notify('Нужно выбрать хотя бы один магазин'); return; }
+    } else {
+        state.selectedStores.add(storeId);
+    }
+    renderStores();
+    scheduleRenderRecipes();
+    saveState();
+}
+
+function updateStoreHint() {
+    const el = $('storeHint');
+    const names = STORES.filter(s => state.selectedStores.has(s.id)).map(s => s.name);
+    if (names.length === 0) el.style.display = 'none';
+    else {
+        el.style.display = 'block';
+        el.innerHTML = `🛒 Выбрано: <strong>${escapeHtml(names.join(', '))}</strong>`;
+    }
+}
+
+// ==================== РЕНДЕР: ИНГРЕДИЕНТЫ ====================
+function renderIngredients() {
+    const container = $('ingredientTags');
+    if (container.children.length === ALL_INGREDIENTS.length) {
+        Array.from(container.children).forEach((el, i) => {
+            const excl = state.excluded.has(ALL_INGREDIENTS[i]);
+            el.classList.toggle('excluded', excl);
+            el.setAttribute('aria-pressed', excl);
+        });
+    } else {
+        const frag = document.createDocumentFragment();
+        ALL_INGREDIENTS.forEach(ing => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tag';
+            btn.textContent = ing;
+            btn.dataset.ingredient = ing;
+            btn.addEventListener('click', () => toggleIngredient(ing));
+            frag.appendChild(btn);
+        });
+        container.innerHTML = '';
+        container.appendChild(frag);
+        Array.from(container.children).forEach((el, i) => {
+            const excl = state.excluded.has(ALL_INGREDIENTS[i]);
+            el.classList.toggle('excluded', excl);
+            el.setAttribute('aria-pressed', excl);
+        });
+    }
+    $('excludedCount').textContent = `Исключено: ${state.excluded.size}`;
+}
+
+function toggleIngredient(ingredient) {
+    if (state.excluded.has(ingredient)) state.excluded.delete(ingredient);
+    else state.excluded.add(ingredient);
+    renderIngredients();
+    scheduleRenderRecipes();
+    saveState();
+}
+
+// ==================== РЕНДЕР: ЛЮДИ ====================
+function updatePeopleDisplay() {
+    $('adultsCount').textContent = state.people.adults;
+    $('kidsSmallCount').textContent = state.people.kidsSmall;
+    $('kidsBigCount').textContent = state.people.kidsBig;
+    $('teensCount').textContent = state.people.teens;
+
+    const target = getTargetPortions();
+    $('portionCount').textContent = target;
+
+    const p = state.people;
+    const total = p.adults + p.kidsSmall + p.kidsBig + p.teens;
+    let text;
+    if (total === 0) {
+        text = '⚠️ Добавьте хотя бы одного человека';
+    } else {
+        const parts = [];
+        if (p.adults > 0) parts.push(`${p.adults} взр.`);
+        if (p.kidsSmall > 0) parts.push(`${p.kidsSmall} мл.дет.`);
+        if (p.kidsBig > 0) parts.push(`${p.kidsBig} ст.дет.`);
+        if (p.teens > 0) parts.push(`${p.teens} подр.`);
+        text = `🍽️ Порций: ${parts.join(' ')} (≈${target} порц.)`;
+    }
+    $('peopleHint').textContent = text;
+}
+
+function initCounters() {
+    document.querySelectorAll('.counter').forEach(counter => {
+        const type = counter.dataset.type;
+        if (!type || !(type in state.people)) return;
+        const dec = counter.querySelector('.dec');
+        const inc = counter.querySelector('.inc');
+        const span = counter.querySelector('.count');
+        if (!dec || !inc || !span) return;
+
+        const update = delta => {
+            const nv = clamp(state.people[type] + delta, 0, 20);
+            if (nv === state.people[type]) return;
+            state.people[type] = nv;
+            span.textContent = nv;
+            updatePeopleDisplay();
+            scheduleRenderRecipes();
+            saveState();
+        };
+
+        dec.addEventListener('click', () => update(-1));
+        inc.addEventListener('click', () => update(1));
+    });
+    updatePeopleDisplay();
+}
+
+// ==================== РЕНДЕР: ПРИЁМЫ ПИЩИ ====================
+function renderMeals() {
+    const container = $('mealToggles');
+    if (container.children.length === VALID_MEALS.length) {
+        Array.from(container.children).forEach((el, i) => {
+            const sel = state.meals.has(VALID_MEALS[i]);
+            el.classList.toggle('selected', sel);
+            el.setAttribute('aria-pressed', sel);
+        });
+    } else {
+        const frag = document.createDocumentFragment();
+        VALID_MEALS.forEach(meal => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'meal-btn';
+            btn.textContent = meal.charAt(0).toUpperCase() + meal.slice(1);
+            btn.dataset.meal = meal;
+            btn.addEventListener('click', () => toggleMeal(meal));
+            frag.appendChild(btn);
+        });
+        container.innerHTML = '';
+        container.appendChild(frag);
+        Array.from(container.children).forEach((el, i) => {
+            const sel = state.meals.has(VALID_MEALS[i]);
+            el.classList.toggle('selected', sel);
+            el.setAttribute('aria-pressed', sel);
+        });
+    }
+}
+
+function toggleMeal(meal) {
+    if (!VALID_MEALS.includes(meal)) return;
+    if (state.meals.has(meal)) {
+        if (state.meals.size > 1) state.meals.delete(meal);
+        else { notify('Выберите хотя бы один приём пищи'); return; }
+    } else {
+        state.meals.add(meal);
+    }
+    renderMeals();
+    scheduleRenderRecipes();
+    saveState();
+}
+
+// ==================== ФИЛЬТРАЦИЯ ====================
+function getAllRecipes() {
+    return state.aiRecipes.concat(RECIPES);
+}
+
+function matchesSearch(recipe, query) {
+    if (!query) return true;
+    const q = query.toLowerCase().trim();
+    if (!q) return true;
+    if (String(recipe.name || '').toLowerCase().includes(q)) return true;
+    if (String(recipe.description || '').toLowerCase().includes(q)) return true;
+    return safeArray(recipe.ingredients).some(i => String(i).toLowerCase().includes(q));
+}
+
+function filterRecipes() {
+    const all = getAllRecipes();
+    const target = getTargetPortions();
+    const result = [];
+
+    for (let i = 0; i < all.length; i++) {
+        const r = all[i];
+        const ingredients = safeArray(r.ingredients);
+        if (ingredients.length === 0) continue;
+
+        // Избранное
+        if (state.view === 'fav' && !state.favorites.has(r.id)) continue;
+
+        // Поиск
+        if (!matchesSearch(r, state.search)) continue;
+
+        // Время
+        const ct = Number(r.cookingTime) || 0;
+        if (ct > state.maxTime) continue;
+
+        // Магазины и исключения
+        let ok = true;
+        for (let j = 0; j < ingredients.length; j++) {
+            const ing = ingredients[j];
+            if (state.excluded.has(ing)) { ok = false; break; }
+            const stores = getStoresForIngredient(r, ing);
+            if (stores.length > 0 && !stores.some(s => state.selectedStores.has(s))) {
+                ok = false; break;
+            }
+        }
+        if (!ok) continue;
+
+        // Приёмы пищи
+        const meals = safeArray(r.meal);
+        if (!meals.some(m => state.meals.has(m))) continue;
+
+        result.push(r);
+    }
+
+    result.sort((a, b) => {
+        const pa = Number(a.basePortions) || 1;
+        const pb = Number(b.basePortions) || 1;
+        return Math.abs(pa - target) - Math.abs(pb - target);
+    });
+
+    return result;
+}
+
+// ==================== РЕНДЕР: РЕЦЕПТЫ ====================
+function toggleRecipe(id) {
+    if (state.openRecipes.has(id)) state.openRecipes.delete(id);
+    else state.openRecipes.add(id);
+    renderRecipes();
+}
+
+function toggleFavorite(id, event) {
+    if (event) event.stopPropagation();
+    if (state.favorites.has(id)) {
+        state.favorites.delete(id);
+        notify('Удалено из избранного');
+    } else {
+        state.favorites.add(id);
+        notify('Добавлено в избранное', 'success');
+    }
+    saveState();
+    renderRecipes();
+}
+
+function renderRecipes() {
+    const list = $('recipesList');
+    const filtered = filterRecipes();
+    $('recipeCount').textContent = `(${filtered.length})`;
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state">😕 Ничего не найдено.<br>Попробуйте изменить фильтры или условия.</div>`;
+        return;
+    }
+
+    const target = getTargetPortions();
+    const frag = document.createDocumentFragment();
+
+    for (const recipe of filtered) {
+        frag.appendChild(createRecipeCard(recipe, target));
+    }
+
+    const scrollTop = list.scrollTop;
+    list.innerHTML = '';
+    list.appendChild(frag);
+    list.scrollTop = scrollTop;
+}
+
+function createRecipeCard(recipe, target) {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    if (recipe.isAI) card.classList.add('ai-generated');
+    if (state.favorites.has(recipe.id)) card.classList.add('favorite');
+
+    // AI-метка
+    if (recipe.isAI) {
+        const lbl = document.createElement('div');
+        lbl.className = 'ai-label';
+        lbl.textContent = '🤖 Сгенерировано ИИ';
+        card.appendChild(lbl);
+    }
+
+    // Заголовок + избранное
+    const header = document.createElement('div');
+    header.className = 'recipe-header';
+    const title = document.createElement('h3');
+    title.textContent = String(recipe.name || 'Без названия');
+    header.appendChild(title);
+
+    const favBtn = document.createElement('button');
+    favBtn.type = 'button';
+    favBtn.className = 'fav-btn' + (state.favorites.has(recipe.id) ? ' active' : '');
+    favBtn.textContent = state.favorites.has(recipe.id) ? '❤️' : '🤍';
+    favBtn.title = 'В избранное';
+    favBtn.addEventListener('click', e => toggleFavorite(recipe.id, e));
+    header.appendChild(favBtn);
+
+    card.appendChild(header);
+
+    // Приёмы пищи
+    const meals = safeArray(recipe.meal);
+    if (meals.length > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'meal-badge';
+        badge.textContent = meals.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(' · ');
+        card.appendChild(badge);
+    }
+
+    // КБЖУ
+    const kbju = getRecipeKBJU(recipe, target);
+    if (kbju.kcal > 0) {
+        const kbjuEl = document.createElement('div');
+        kbjuEl.className = 'kbju-badge';
+        kbjuEl.innerHTML = `
+            <span class="kbju-item">🔥 <strong>${kbju.kcal}</strong> <span class="kbju-label">ккал</span></span>
+            <span class="kbju-item">Б <strong>${kbju.prot}</strong></span>
+            <span class="kbju-item">Ж <strong>${kbju.fat}</strong></span>
+            <span class="kbju-item">У <strong>${kbju.carb}</strong></span>
+        `;
+        card.appendChild(kbjuEl);
+    }
+
+    // Описание
+    if (recipe.description) {
+        const desc = document.createElement('div');
+        desc.className = 'recipe-desc';
+        desc.textContent = String(recipe.description);
+        card.appendChild(desc);
+    }
+
+    // Ингредиенты
+    const ingredients = safeArray(recipe.ingredients);
+    if (ingredients.length > 0) {
+        const badges = document.createElement('div');
+        badges.className = 'ingredients-badge';
+        ingredients.forEach(ing => {
+            const b = document.createElement('span');
+            b.className = 'badge';
+            b.textContent = ing;
+            badges.appendChild(b);
+        });
+        card.appendChild(badges);
+    }
+
+    // Магазины
+    const storesSection = document.createElement('div');
+    storesSection.className = 'stores-section';
+    const stTitle = document.createElement('p');
+    stTitle.textContent = '🛒 Доступно в ваших магазинах:';
+    storesSection.appendChild(stTitle);
+
+    const storeListDiv = document.createElement('div');
+    storeListDiv.className = 'store-list';
+    const availableStores = new Set();
+    ingredients.forEach(ing => {
+        getStoresForIngredient(recipe, ing).forEach(s => {
+            if (state.selectedStores.has(s)) availableStores.add(s);
+        });
+    });
+
+    if (availableStores.size === 0) {
+        const noStore = document.createElement('span');
+        noStore.className = 'store-item';
+        noStore.textContent = 'Нет в выбранных';
+        noStore.style.background = 'var(--red-bg)';
+        noStore.style.borderColor = 'var(--red-border)';
+        noStore.style.color = 'var(--red-text)';
+        storeListDiv.appendChild(noStore);
+    } else {
+        const sorted = Array.from(availableStores).sort((a,b) => getStoreName(a).localeCompare(getStoreName(b)));
+        sorted.forEach(sid => {
+            const sp = document.createElement('span');
+            sp.className = 'store-item';
+            sp.textContent = getStoreName(sid);
+            storeListDiv.appendChild(sp);
+        });
+    }
+    storesSection.appendChild(storeListDiv);
+    card.appendChild(storesSection);
+
+    // Инфо о порциях
+    const basePortions = Number(recipe.basePortions) || 1;
+    const ratio = basePortions / target;
+    const portionInfo = document.createElement('div');
+    portionInfo.className = 'portion-info';
+    if (Math.abs(ratio - 1) < 0.3) portionInfo.textContent = `✅ Идеально для ~${target} порций`;
+    else if (ratio > 1.3) portionInfo.textContent = `📦 Хватит с запасом (на ${basePortions} порц.)`;
+    else portionInfo.textContent = `⚠️ Может не хватить (на ${basePortions} порц.)`;
+    card.appendChild(portionInfo);
+
+    // Кнопка раскрытия
+    const isOpen = state.openRecipes.has(recipe.id);
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'toggle-recipe-btn' + (isOpen ? ' opened' : '');
+    toggleBtn.textContent = isOpen ? '🔼 Скрыть рецепт' : '📖 Показать рецепт';
+    toggleBtn.addEventListener('click', () => toggleRecipe(recipe.id));
+    card.appendChild(toggleBtn);
+
+    // Детали
+    if (isOpen) {
+        card.appendChild(createRecipeDetails(recipe, target));
+    }
+
+    return card;
+}
+
+function createRecipeDetails(recipe, target) {
+    const details = document.createElement('div');
+    details.className = 'recipe-details';
+
+    // Мета
+    const steps = safeArray(recipe.steps);
+    const meta = document.createElement('div');
+    meta.className = 'recipe-meta';
+    const time = Number(recipe.cookingTime) || '?';
+    meta.innerHTML = `
+        <span>⏱️ ${escapeHtml(String(time))} мин</span>
+        <span>🍽️ ${target} порц.</span>
+        <span>📋 ${steps.length} шагов</span>
+    `;
+    details.appendChild(meta);
+
+    // Ингредиенты с граммовкой
+    const ingredients = safeArray(recipe.ingredients);
+    const grams = safeObj(recipe.gramsPerPortion);
+
+    if (ingredients.length > 0) {
+        const titleEl = document.createElement('div');
+        titleEl.className = 'recipe-section-title';
+        titleEl.textContent = '🧂 Ингредиенты';
+        details.appendChild(titleEl);
+
+        const ul = document.createElement('ul');
+        ul.className = 'ingredients-list';
+        ingredients.forEach(ing => {
+            const perPortion = Number(grams[ing]);
+            let qty;
+            if (Number.isFinite(perPortion) && perPortion > 0) {
+                const total = Math.round(perPortion * target);
+                const isCountable = ing === 'яйца' || (ing === 'чеснок' && perPortion < 10);
+                qty = isCountable ? `${total} шт` : `${total} г`;
+            } else {
+                qty = 'по вкусу';
+            }
+            const li = document.createElement('li');
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'ing-name';
+            nameSpan.textContent = ing;
+            const qtySpan = document.createElement('span');
+            qtySpan.className = 'ing-qty';
+            qtySpan.textContent = qty;
+            li.appendChild(nameSpan);
+            li.appendChild(qtySpan);
+            ul.appendChild(li);
+        });
+        details.appendChild(ul);
+    }
+
+    // Шаги
+    if (steps.length > 0) {
+        const titleEl = document.createElement('div');
+        titleEl.className = 'recipe-section-title';
+        titleEl.textContent = '👨‍🍳 Приготовление';
+        details.appendChild(titleEl);
+
+        const ol = document.createElement('ol');
+        ol.className = 'steps-list';
+        steps.forEach(step => {
+            const li = document.createElement('li');
+            li.textContent = String(step);
+            ol.appendChild(li);
+        });
+        details.appendChild(ol);
+    }
+
+    // Совет
+    if (recipe.tip) {
+        const tip = document.createElement('div');
+        tip.className = 'tip-box';
+        tip.innerHTML = `<strong>💡 Совет:</strong> ${escapeHtml(String(recipe.tip))}`;
+        details.appendChild(tip);
+    }
+
+    // Таймер
+    details.appendChild(createTimerBlock(recipe));
+
+    // Действия (поделиться, печать)
+    const actions = document.createElement('div');
+    actions.className = 'recipe-actions';
+
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.className = 'recipe-action-btn';
+    shareBtn.innerHTML = '📤 Поделиться';
+    shareBtn.addEventListener('click', () => shareRecipe(recipe));
+    actions.appendChild(shareBtn);
+
+    const printBtn = document.createElement('button');
+    printBtn.type = 'button';
+    printBtn.className = 'recipe-action-btn';
+    printBtn.innerHTML = '🖨️ Печать';
+    printBtn.addEventListener('click', () => printRecipe(recipe));
+    actions.appendChild(printBtn);
+
+    details.appendChild(actions);
+
+    return details;
+}
+
+// ==================== ТАЙМЕР ====================
+function createTimerBlock(recipe) {
+    const box = document.createElement('div');
+    box.className = 'timer-box';
+
+    const time = Number(recipe.cookingTime) || 30;
+    const display = document.createElement('div');
+    display.className = 'timer-display';
+    display.id = `timer-display-${recipe.id}`;
+
+    const saved = state.timers[recipe.id];
+    const remaining = saved ? saved.remaining : time * 60;
+    display.textContent = formatTime(remaining);
+    box.appendChild(display);
+
+    const controls = document.createElement('div');
+    controls.className = 'timer-controls';
+
+    const startBtn = document.createElement('button');
+    startBtn.type = 'button';
+    startBtn.className = 'timer-btn primary';
+    startBtn.textContent = saved && saved.interval ? '⏸️ Пауза' : '▶️ Старт';
+    startBtn.addEventListener('click', () => toggleTimer(recipe.id, time));
+    controls.appendChild(startBtn);
+
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'timer-btn';
+    resetBtn.textContent = '🔄 Сброс';
+    resetBtn.addEventListener('click', () => resetTimer(recipe.id, time));
+    controls.appendChild(resetBtn);
+
+    box.appendChild(controls);
+    return box;
+}
+
+function formatTime(seconds) {
+    const s = Math.max(0, Math.floor(seconds));
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+function toggleTimer(recipeId, minutes) {
+    const timer = state.timers[recipeId] || { remaining: minutes * 60, interval: null };
+    if (timer.interval) {
+        clearInterval(timer.interval);
+        timer.interval = null;
+    } else {
+        timer.interval = setInterval(() => {
+            timer.remaining--;
+            const display = $(`timer-display-${recipeId}`);
+            if (display) display.textContent = formatTime(timer.remaining);
+            if (timer.remaining <= 0) {
+                clearInterval(timer.interval);
+                timer.interval = null;
+                notify('⏰ Время вышло!', 'success');
+                try {
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                } catch (e) {}
+                renderRecipes();
+            }
+        }, 1000);
+    }
+    state.timers[recipeId] = timer;
+    renderRecipes();
+}
+
+function resetTimer(recipeId, minutes) {
+    const timer = state.timers[recipeId];
+    if (timer && timer.interval) clearInterval(timer.interval);
+    state.timers[recipeId] = { remaining: minutes * 60, interval: null };
+    renderRecipes();
+}
+
+// ==================== ПОДЕЛИТЬСЯ И ПЕЧАТЬ ====================
+async function shareRecipe(recipe) {
+    const url = `${location.origin}${location.pathname}?recipe=${encodeURIComponent(recipe.id)}`;
+    const text = `${recipe.name}\n\n${recipe.description || ''}\n\n${url}`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: recipe.name, text: recipe.description || '', url });
+            return;
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+        }
+    }
+
+    try {
+        await navigator.clipboard.writeText(text);
+        notify('Ссылка скопирована', 'success');
+    } catch (e) {
+        prompt('Скопируйте ссылку:', url);
+    }
+}
+
+function printRecipe(recipe) {
+    const w = window.open('', '_blank');
+    if (!w) {
+        notify('Разрешите всплывающие окна', 'error');
+        return;
+    }
+
+    const target = getTargetPortions();
+    const ingredients = safeArray(recipe.ingredients);
+    const grams = safeObj(recipe.gramsPerPortion);
+    const steps = safeArray(recipe.steps);
+    const kbju = getRecipeKBJU(recipe, target);
+
+    const ingHtml = ingredients.map(ing => {
+        const perPortion = Number(grams[ing]);
+        let qty = 'по вкусу';
+        if (Number.isFinite(perPortion) && perPortion > 0) {
+            const total = Math.round(perPortion * target);
+            const isCountable = ing === 'яйца' || (ing === 'чеснок' && perPortion < 10);
+            qty = isCountable ? `${total} шт` : `${total} г`;
+        }
+        return `<li>${escapeHtml(ing)} — ${escapeHtml(qty)}</li>`;
+    }).join('');
+
+    const stepsHtml = steps.map((s, i) => `<li><strong>${i+1}.</strong> ${escapeHtml(s)}</li>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8">
+<title>${escapeHtml(recipe.name)}</title>
+<style>
+body{font-family:'Segoe UI',Roboto,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;color:#222;line-height:1.5}
+h1{font-size:1.6rem;border-bottom:2px solid #ffb347;padding-bottom:.5rem}
+.kbju{background:#e6f3e6;padding:.5rem 1rem;border-radius:30px;display:inline-block;font-size:.9rem;margin:.5rem 0}
+.meta{color:#666;font-size:.9rem;margin:.5rem 0 1rem}
+h2{font-size:1.1rem;margin-top:1.5rem;color:#333}
+ul,ol{padding-left:1.5rem}
+li{margin-bottom:.4rem}
+.tip{background:#eaf6ea;border-left:4px solid #6cbf6c;padding:.7rem 1rem;border-radius:8px;margin-top:1rem}
+@media print{body{margin:0;padding:1rem}}
+</style></head><body>
+<h1>${escapeHtml(recipe.name)}</h1>
+<div class="meta">⏱️ ${Number(recipe.cookingTime)||'?'} мин · 🍽️ ${target} порц.</div>
+${recipe.description ? `<p><em>${escapeHtml(recipe.description)}</em></p>` : ''}
+${kbju.kcal > 0 ? `<div class="kbju">🔥 ${kbju.kcal} ккал · Б ${kbju.prot} · Ж ${kbju.fat} · У ${kbju.carb}</div>` : ''}
+<h2>Ингредиенты</h2>
+<ul>${ingHtml}</ul>
+<h2>Приготовление</h2>
+<ol>${stepsHtml}</ol>
+${recipe.tip ? `<div class="tip"><strong>💡 Совет:</strong> ${escapeHtml(recipe.tip)}</div>` : ''}
+</body></html>`;
+
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { w.print(); }, 300);
+}
+
+// ==================== СПИСОК ПОКУПОК ====================
+function buildShoppingList() {
+    const openIds = Array.from(state.openRecipes);
+    const recipes = getAllRecipes().filter(r => openIds.includes(r.id));
+    if (recipes.length === 0) return null;
+
+    const target = getTargetPortions();
+    const byStore = {};  // {storeId: {ingredient: totalQty}}
+    const other = {};    // ингредиенты без магазина
+
+    recipes.forEach(recipe => {
+        const ingredients = safeArray(recipe.ingredients);
+        const grams = safeObj(recipe.gramsPerPortion);
+
+        ingredients.forEach(ing => {
+            const stores = getStoresForIngredient(recipe, ing);
+            const userStores = stores.filter(s => state.selectedStores.has(s));
+
+            const perPortion = Number(grams[ing]);
+            const isCountable = ing === 'яйца' || (ing === 'чеснок' && perPortion < 10);
+            const unit = isCountable ? 'шт' : 'г';
+            const qty = (Number.isFinite(perPortion) && perPortion > 0)
+                ? Math.round(perPortion * target)
+                : 1;
+
+            const key = ing;
+            const targetStores = userStores.length > 0 ? userStores : ['other'];
+
+            targetStores.forEach(sid => {
+                const container = sid === 'other' ? other : byStore;
+                if (!container[sid]) container[sid] = {};
+                if (!container[sid][key]) container[sid][key] = { qty: 0, unit };
+                container[sid][key].qty += qty;
+            });
+        });
+    });
+
+    return { byStore, other };
+}
+
+function renderShoppingList() {
+    const container = $('shoppingList');
+    const data = buildShoppingList();
+
+    if (!data || (Object.keys(data.byStore).length === 0 && Object.keys(data.other).length === 0)) {
+        container.innerHTML = `<div class="shopping-empty">🛒 Откройте рецепты (нажмите «Показать рецепт»), и их ингредиенты появятся здесь.</div>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+
+    // Группируем по магазинам
+    Object.keys(data.byStore).forEach(storeId => {
+        const storeName = getStoreName(storeId);
+        const items = data.byStore[storeId];
+
+        const title = document.createElement('div');
+        title.className = 'shopping-store-title';
+        title.textContent = `📍 ${storeName}`;
+        frag.appendChild(title);
+
+        Object.keys(items).forEach(ing => {
+            frag.appendChild(createShoppingItem(storeId, ing, items[ing]));
+        });
+    });
+
+    // «Без магазина»
+    if (Object.keys(data.other).length > 0) {
+        const title = document.createElement('div');
+        title.className = 'shopping-store-title';
+        title.textContent = '📍 Другие магазины';
+        frag.appendChild(title);
+
+        Object.keys(data.other).forEach(ing => {
+            frag.appendChild(createShoppingItem('other', ing, data.other[ing]));
+        });
+    }
+
+    container.innerHTML = '';
+    container.appendChild(frag);
+}
+
+function createShoppingItem(storeId, ing, info) {
+    const item = document.createElement('div');
+    item.className = 'shopping-item';
+
+    const checkId = `shop-${storeId}-${ing}`;
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = checkId;
+    cb.checked = state.shoppingChecked.has(checkId);
+    cb.addEventListener('change', () => {
+        if (cb.checked) state.shoppingChecked.add(checkId);
+        else state.shoppingChecked.delete(checkId);
+        saveShoppingChecked();
+    });
+
+    const label = document.createElement('label');
+    label.htmlFor = checkId;
+    label.textContent = `${ing} — ${info.qty} ${info.unit}`;
+
+    item.appendChild(cb);
+    item.appendChild(label);
+    return item;
+}
+
+function openShopping() {
+    renderShoppingList();
+    $('shoppingOverlay').classList.add('active');
+}
+
+function closeShopping() {
+    $('shoppingOverlay').classList.remove('active');
+}
+
+function clearShopping() {
+    state.shoppingChecked.clear();
+    saveShoppingChecked();
+    renderShoppingList();
+    notify('Список отмеченных очищен');
+}
+
+// ==================== СЛУЧАЙНЫЙ РЕЦЕПТ ====================
+function randomRecipe() {
+    const filtered = filterRecipes();
+    if (filtered.length === 0) {
+        notify('Нет подходящих рецептов для случайного выбора', 'error');
+        return;
+    }
+    const r = filtered[Math.floor(Math.random() * filtered.length)];
+    state.openRecipes.add(r.id);
+    renderRecipes();
+    setTimeout(() => {
+        const el = document.querySelector('.recipe-card.favorite, .recipe-card');
+        const cards = document.querySelectorAll('.recipe-card');
+        for (const card of cards) {
+            const h3 = card.querySelector('h3');
+            if (h3 && h3.textContent === r.name) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                break;
+            }
+        }
+    }, 100);
+    notify(`🎲 ${r.name}`);
+}
+
+// ==================== НАСТРОЙКИ ИИ ====================
+function updateSettingsUI() {
+    const btn = $('settingsBtn');
+    const txt = $('settingsBtnText');
+    if (state.config.apiKey) {
+        btn.classList.add('has-key');
+        txt.textContent = 'ИИ ✓';
+    } else {
+        btn.classList.remove('has-key');
+        txt.textContent = 'ИИ';
+    }
+}
+
+function openSettings() {
+    $('apiKeyInput').value = state.config.apiKey;
+    $('modelSelect').value = state.config.model;
+    $('modalOverlay').classList.add('active');
+}
+
+function closeSettings() {
+    $('modalOverlay').classList.remove('active');
+}
+
+function saveSettings() {
+    state.config.apiKey = $('apiKeyInput').value.trim();
+    state.config.model = $('modelSelect').value;
+    try {
+        localStorage.setItem(STORAGE_KEYS.apiKey, state.config.apiKey);
+        localStorage.setItem(STORAGE_KEYS.model, state.config.model);
+    } catch (e) {}
+    updateSettingsUI();
+    closeSettings();
+    notify('Настройки сохранены', 'success');
+}
+
+function clearSettings() {
+    if (!confirm('Удалить сохранённый ключ?')) return;
+    state.config.apiKey = '';
+    try { localStorage.removeItem(STORAGE_KEYS.apiKey); } catch (e) {}
+    $('apiKeyInput').value = '';
+    updateSettingsUI();
+    notify('Ключ удалён');
+}
+
+// ==================== ИИ ====================
+function showAIError(msg) {
+    $('aiErrorContainer').innerHTML = `<div class="ai-error">⚠️ ${escapeHtml(msg)}</div>`;
+}
+
+function clearAIError() {
+    $('aiErrorContainer').innerHTML = '';
+}
+
+function parseAIRecipe(content) {
+    let cleaned = String(content).trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+        throw new Error('Не удалось найти JSON в ответе ИИ');
+    }
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+    return JSON.parse(cleaned);
+}
+
+function normalizeAIRecipe(raw, targetPortions) {
+    if (!raw || typeof raw !== 'object') throw new Error('Пустой ответ от ИИ');
+    if (!raw.name || typeof raw.name !== 'string') throw new Error('Нет названия блюда');
+
+    const ingredients = safeArray(raw.ingredients)
+        .map(i => String(i).toLowerCase().trim())
+        .filter(i => i.length > 0 && i.length < 50);
+
+    if (ingredients.length === 0) throw new Error('ИИ не указал ингредиенты');
+
+    const cleanedIngredients = ingredients.filter(i => !state.excluded.has(i));
+    if (cleanedIngredients.length === 0) {
+        throw new Error('ИИ использовал только запрещённые продукты. Попробуйте ещё раз.');
+    }
+
+    const steps = safeArray(raw.steps).map(s => String(s).trim()).filter(s => s.length > 0);
+    if (steps.length === 0) throw new Error('ИИ не указал шаги приготовления');
+
+    let meals = safeArray(raw.meal).filter(m => VALID_MEALS.includes(m));
+    if (meals.length === 0) meals = Array.from(state.meals);
+
+    const storeMap = {};
+    const rawStoreMap = safeObj(raw.storeMap);
+    const validStoreIds = STORES.map(s => s.id);
+    cleanedIngredients.forEach(ing => {
+        const stores = safeArray(rawStoreMap[ing]).filter(s => validStoreIds.includes(s));
+        if (stores.length > 0) storeMap[ing] = stores;
+    });
+
+    const gramsPerPortion = {};
+    const rawGrams = safeObj(raw.gramsPerPortion);
+    cleanedIngredients.forEach(ing => {
+        const v = Number(rawGrams[ing]);
+        if (Number.isFinite(v) && v > 0 && v < 2000) {
+            gramsPerPortion[ing] = v;
+        }
+    });
+
+    return {
+        id: 'ai-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        isAI: true,
+        name: String(raw.name).slice(0, 120),
+        description: String(raw.description || '').slice(0, 300),
+        meal: meals,
+        cookingTime: clamp(Number(raw.cookingTime) || 30, 5, 240),
+        ingredients: cleanedIngredients,
+        basePortions: clamp(Number(raw.basePortions) || Math.round(targetPortions), 1, 20),
+        gramsPerPortion,
+        steps: steps.slice(0, 12).map(s => s.slice(0, 300)),
+        tip: raw.tip ? String(raw.tip).slice(0, 300) : '',
+        storeMap,
+        generatedAt: Date.now()
+    };
+}
+
+async function generateRecipeWithAI() {
+    if (state.isGenerating) return;
+    if (!state.config.apiKey) {
+        showAIError('Настройте ИИ — нажмите «⚙️ ИИ» вверху.');
+        openSettings();
+        return;
+    }
+
+    const selectedStoreNames = STORES.filter(s => state.selectedStores.has(s.id)).map(s => s.name);
+    const excludedList = Array.from(state.excluded);
+    const targetPortions = getTargetPortions();
+    const mealList = Array.from(state.meals);
+    const existingNames = state.aiRecipes.slice(0, 20).map(r => r.name).filter(Boolean);
+
+    const prompt = `Ты — опытный повар. Придумай ОДИН новый уникальный рецепт блюда.
+
+УСЛОВИЯ:
+- Приёмы пищи: ${mealList.join(', ')}
+- Количество порций: ~${targetPortions}
+- Магазины: ${selectedStoreNames.join(', ')}
+- НЕ использовать: ${excludedList.length ? excludedList.join(', ') : 'нет ограничений'}
+${existingNames.length ? `- Избегай повторов этих блюд: ${existingNames.slice(0, 8).join('; ')}` : ''}
+
+Верни ТОЛЬКО валидный JSON (без markdown-обёртки) такой структуры:
+{"name":"Название","description":"1 предложение","meal":["обед"],"cookingTime":30,"ingredients":["курица","рис"],"basePortions":4,"gramsPerPortion":{"курица":120,"рис":30},"steps":["Шаг 1","Шаг 2","Шаг 3","Шаг 4"],"tip":"Совет","storeMap":{"курица":["magnit","pyaterochka"],"рис":["auchan"]}}
+
+ТРЕБОВАНИЯ:
+- meal строго из: завтрак, обед, ужин
+- ingredients — простые названия на русском, БЕЗ исключённых: ${excludedList.join(', ') || 'нет'}
+- gramsPerPortion — на ОДНУ порцию (яйца и чеснок в штуках)
+- steps — 4-7 шагов
+- storeMap — только из: ${STORES.map(s=>s.id).join(', ')}
+- Рецепт должен быть реалистичным и готовиться в домашних условиях`;
+
+    state.isGenerating = true;
+    const btn = $('aiGenerateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> ИИ думает...';
+    clearAIError();
+    $('aiUsage').textContent = '';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.config.apiKey}`,
+                'HTTP-Referer': location.origin || 'https://example.com',
+                'X-Title': 'Recipe Constructor'
+            },
+            body: JSON.stringify({
+                model: state.config.model,
+                messages: [
+                    { role: 'system', content: 'Ты возвращаешь только валидный JSON, без markdown, без пояснений.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.9,
+                max_tokens: 1500
+            })
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errText = await response.text();
+            let errMsg = `Ошибка ${response.status}`;
+            try {
+                const errJson = JSON.parse(errText);
+                errMsg = errJson.error?.message || errMsg;
+            } catch (e) {}
+            if (response.status === 401) errMsg = 'Неверный API-ключ. Проверьте настройки.';
+            else if (response.status === 402) errMsg = 'Закончились средства на OpenRouter.';
+            else if (response.status === 429) errMsg = 'Слишком много запросов. Подождите минуту.';
+            throw new Error(errMsg);
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || '';
+        if (!content) throw new Error('Пустой ответ от ИИ');
+
+        const rawRecipe = parseAIRecipe(content);
+        const recipe = normalizeAIRecipe(rawRecipe, targetPortions);
+
+        state.aiRecipes.unshift(recipe);
+        if (state.aiRecipes.length > 50) state.aiRecipes = state.aiRecipes.slice(0, 50);
+
+        state.openRecipes.add(recipe.id);
+        saveAIRecipes();
+        renderRecipes();
+
+        const usage = data.usage;
+        if (usage) {
+            $('aiUsage').textContent = `Токенов: ${usage.total_tokens || '?'} · ${state.config.model.split('/')[1] || state.config.model}`;
+        } else {
+            $('aiUsage').textContent = `Готово · ${state.config.model}`;
+        }
+    } catch (err) {
+        clearTimeout(timeoutId);
+        console.error('AI error:', err);
+        let msg = err.message || 'Не удалось сгенерировать рецепт';
+        if (err.name === 'AbortError') msg = 'Превышено время ожидания (45 сек). Попробуйте ещё раз.';
+        showAIError(msg);
+    } finally {
+        state.isGenerating = false;
+        btn.disabled = false;
+        btn.textContent = '✨ Сгенерировать рецепт';
+    }
+}
+
+// ==================== СБРОС ====================
+function resetAll() {
+    state.excluded.clear();
+    state.openRecipes.clear();
+    state.aiRecipes = [];
+    state.shoppingChecked.clear();
+    try {
+        localStorage.removeItem(STORAGE_KEYS.aiRecipes);
+        localStorage.removeItem(STORAGE_KEYS.shopping);
+    } catch (e) {}
+    renderIngredients();
+    renderRecipes();
+    saveState();
+    notify('Все исключения и ИИ-рецепты сброшены');
+}
+
+// ==================== ПОИСК И ФИЛЬТРЫ ====================
+function initSearchAndFilters() {
+    const searchInput = $('searchInput');
+    searchInput.addEventListener('input', debounce(e => {
+        state.search = e.target.value;
+        renderRecipes();
+    }, 200));
+
+    document.querySelectorAll('#timeFilters .time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#timeFilters .time-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.maxTime = Number(btn.dataset.max) || 999;
+            renderRecipes();
+        });
+    });
+
+    document.querySelectorAll('#viewFilters .time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#viewFilters .time-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.view = btn.dataset.view || 'all';
+            renderRecipes();
+        });
+    });
+}
+
+// ==================== DEEP LINK ====================
+function handleDeepLink() {
+    const params = new URLSearchParams(location.search);
+    const recipeId = params.get('recipe');
+    if (!recipeId) return;
+
+    const all = getAllRecipes();
+    const recipe = all.find(r => String(r.id) === recipeId);
+    if (recipe) {
+        state.openRecipes.add(recipe.id);
+        renderRecipes();
+        setTimeout(() => {
+            const cards = document.querySelectorAll('.recipe-card');
+            for (const card of cards) {
+                const h3 = card.querySelector('h3');
+                if (h3 && h3.textContent === recipe.name) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    break;
+                }
+            }
+        }, 300);
+    }
+}
+
+// ==================== PWA ====================
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+                console.log('SW не зарегистрирован:', err.message);
+            });
+        });
+    }
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+function init() {
+    // Тема
+    applyTheme(loadTheme());
+
+    // Загружаем сохранённое
+    loadState();
+    loadAIConfig();
+    loadAIRecipes();
+    loadShoppingChecked();
+
+    // Рендерим UI
+    renderStores();
+    renderIngredients();
+    renderMeals();
+    initCounters();
+    renderRecipes();
+    updateSettingsUI();
+
+    // События
+    $('resetExclusions').addEventListener('click', resetAll);
+    $('settingsBtn').addEventListener('click', openSettings);
+    $('modalCancel').addEventListener('click', closeSettings);
+    $('modalSave').addEventListener('click', saveSettings);
+    $('modalClear').addEventListener('click', clearSettings);
+    $('modalOverlay').addEventListener('click', e => {
+        if (e.target === $('modalOverlay')) closeSettings();
+    });
+    $('aiGenerateBtn').addEventListener('click', generateRecipeWithAI);
+    $('themeBtn').addEventListener('click', toggleTheme);
+    $('randomBtn').addEventListener('click', randomRecipe);
+    $('shoppingBtn').addEventListener('click', openShopping);
+    $('shoppingClose').addEventListener('click', closeShopping);
+    $('shoppingClear').addEventListener('click', clearShopping);
+    $('shoppingOverlay').addEventListener('click', e => {
+        if (e.target === $('shoppingOverlay')) closeShopping();
+    });
+
+    // Поиск и фильтры
+    initSearchAndFilters();
+
+    // Escape
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if ($('modalOverlay').classList.contains('active')) closeSettings();
+            if ($('shoppingOverlay').classList.contains('active')) closeShopping();
+        }
+    });
+
+    // Deep link
+    setTimeout(handleDeepLink, 500);
+
+    // PWA
+    registerServiceWorker();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
+</body>
+</html>
